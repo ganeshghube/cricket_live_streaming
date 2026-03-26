@@ -1,0 +1,1278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
+  <title>SportsCaster Pro</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+/* ═══════════════════════════════════════════════════════════════════
+   CSS VARIABLES & RESET
+═══════════════════════════════════════════════════════════════════ */
+:root {
+  --bg:        #080b12;
+  --surface:   #0f1420;
+  --surface2:  #161d2e;
+  --surface3:  #1e2840;
+  --border:    #253050;
+  --border2:   #2e3a58;
+  --accent:    #3b82f6;
+  --accent-glow: rgba(59,130,246,0.25);
+  --cyan:      #06b6d4;
+  --green:     #10b981;
+  --red:       #ef4444;
+  --yellow:    #f59e0b;
+  --orange:    #f97316;
+  --purple:    #a855f7;
+  --text:      #e2e8f0;
+  --text2:     #94a3b8;
+  --text3:     #64748b;
+  --sidebar-w: 200px;
+  --topbar-h:  52px;
+  --font-h:    'Rajdhani', sans-serif;
+  --font-b:    'DM Sans', sans-serif;
+  --r:         8px;
+  --r2:        12px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font-b);font-size:14px;overflow:hidden;}
+
+/* ═══════════════════════════════════════════════════════════════════
+   LOGIN
+═══════════════════════════════════════════════════════════════════ */
+#login-screen{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  height:100vh;gap:20px;padding:24px;
+  background:radial-gradient(ellipse at 50% 0%,rgba(59,130,246,0.12),transparent 70%);
+}
+.login-logo{font-family:var(--font-h);font-size:2.6rem;font-weight:700;letter-spacing:3px;color:var(--text);}
+.login-logo em{color:var(--accent);font-style:normal;}
+.login-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:16px;
+  padding:32px;width:100%;max-width:360px;
+}
+.login-card h2{font-family:var(--font-h);font-size:1.3rem;font-weight:600;margin-bottom:22px;color:var(--text2);}
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:5px;}
+.field input{
+  width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:var(--r);
+  padding:10px 12px;color:var(--text);font-family:var(--font-b);font-size:0.95rem;
+}
+.field input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow);}
+.btn-login{
+  width:100%;background:var(--accent);color:#fff;border:none;border-radius:var(--r);
+  padding:12px;font-family:var(--font-h);font-size:1.1rem;font-weight:700;letter-spacing:1px;
+  cursor:pointer;transition:all 0.15s;
+}
+.btn-login:hover{background:#2563eb;}
+.login-err{color:var(--red);font-size:0.82rem;margin-top:8px;}
+
+/* ═══════════════════════════════════════════════════════════════════
+   APP SHELL
+═══════════════════════════════════════════════════════════════════ */
+#app{display:none;height:100vh;flex-direction:column;}
+
+/* Top bar */
+.topbar{
+  height:var(--topbar-h);background:var(--surface);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;padding:0 16px;
+  flex-shrink:0;z-index:10;
+}
+.topbar-brand{font-family:var(--font-h);font-size:1.25rem;font-weight:700;letter-spacing:2px;}
+.topbar-brand em{color:var(--accent);font-style:normal;}
+.topbar-right{display:flex;align-items:center;gap:10px;}
+.live-pill{
+  display:none;background:var(--red);color:#fff;font-size:0.68rem;font-weight:700;
+  padding:3px 10px;border-radius:20px;letter-spacing:1.5px;
+  animation:pulse 1.5s infinite;
+}
+.live-pill.on{display:inline-flex;align-items:center;gap:4px;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.rec-pill{
+  display:none;background:var(--red);color:#fff;font-size:0.68rem;font-weight:700;
+  padding:3px 10px;border-radius:20px;letter-spacing:1.5px;
+}
+.rec-pill.on{display:inline-flex;align-items:center;gap:4px;}
+.btn-exit{background:var(--surface2);border:1px solid var(--border);border-radius:6px;
+  color:var(--text2);padding:4px 10px;font-size:0.78rem;cursor:pointer;}
+.btn-exit:hover{border-color:var(--red);color:var(--red);}
+
+/* Main layout */
+.layout{display:flex;flex:1;overflow:hidden;}
+
+/* ═══════════════════════════════════════════════════════════════════
+   LEFT SIDEBAR
+═══════════════════════════════════════════════════════════════════ */
+.sidebar{
+  width:var(--sidebar-w);background:var(--surface);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;overflow-y:auto;flex-shrink:0;
+  scrollbar-width:none;
+}
+.sidebar::-webkit-scrollbar{display:none;}
+
+.nav-section{padding:8px 0;}
+.nav-section + .nav-section{border-top:1px solid var(--border);}
+
+.nav-item{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 14px;cursor:pointer;
+  font-family:var(--font-h);font-size:0.95rem;font-weight:600;letter-spacing:0.5px;
+  color:var(--text2);border-left:3px solid transparent;
+  transition:all 0.15s;user-select:none;
+}
+.nav-item:hover{background:var(--surface2);color:var(--text);}
+.nav-item.active{color:var(--accent);border-left-color:var(--accent);background:rgba(59,130,246,0.08);}
+.nav-item .nav-icon{font-size:1rem;width:18px;text-align:center;flex-shrink:0;}
+.nav-item .nav-label{flex:1;}
+.nav-item .nav-arrow{font-size:0.65rem;color:var(--text3);transition:transform 0.2s;}
+.nav-item.expanded .nav-arrow{transform:rotate(90deg);}
+
+/* Sub nav */
+.sub-nav{overflow:hidden;max-height:0;transition:max-height 0.25s ease;}
+.sub-nav.open{max-height:300px;}
+.sub-item{
+  display:flex;align-items:center;gap:8px;
+  padding:7px 14px 7px 36px;cursor:pointer;
+  font-size:0.83rem;color:var(--text3);
+  transition:all 0.12s;
+}
+.sub-item:hover{color:var(--text);background:var(--surface2);}
+.sub-item.active{color:var(--accent);background:rgba(59,130,246,0.06);}
+.sub-item::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--border2);flex-shrink:0;}
+.sub-item.active::before{background:var(--accent);}
+
+/* ═══════════════════════════════════════════════════════════════════
+   CONTENT AREA
+═══════════════════════════════════════════════════════════════════ */
+.content{flex:1;overflow-y:auto;padding:20px;scrollbar-width:thin;scrollbar-color:var(--border) transparent;}
+.content::-webkit-scrollbar{width:4px;}
+.content::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+
+/* ── Page / Sub-page visibility ── */
+.page{display:none;}
+.page.active{display:block;}
+.subpage{display:none;}
+.subpage.active{display:block;}
+
+/* ═══════════════════════════════════════════════════════════════════
+   GENERIC COMPONENTS
+═══════════════════════════════════════════════════════════════════ */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:18px;margin-bottom:16px;}
+.card-title{font-family:var(--font-h);font-size:0.8rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:1.5px;color:var(--text3);margin-bottom:14px;display:flex;align-items:center;gap:6px;}
+.card-title::before{content:'';display:block;width:3px;height:14px;background:var(--accent);border-radius:2px;}
+
+.btn{border:none;border-radius:var(--r);padding:9px 16px;font-family:var(--font-h);
+  font-weight:700;font-size:0.95rem;cursor:pointer;transition:all 0.15s;letter-spacing:0.5px;}
+.btn:active{transform:scale(0.96);}
+.btn:disabled{opacity:0.4;cursor:not-allowed;transform:none;}
+.btn-sm{padding:6px 12px;font-size:0.82rem;}
+.btn-xs{padding:4px 9px;font-size:0.75rem;}
+.btn-accent{background:var(--accent);color:#fff;}
+.btn-accent:hover:not(:disabled){background:#2563eb;}
+.btn-danger{background:var(--red);color:#fff;}
+.btn-danger:hover:not(:disabled){background:#dc2626;}
+.btn-success{background:var(--green);color:#fff;}
+.btn-success:hover:not(:disabled){background:#059669;}
+.btn-warn{background:var(--yellow);color:#000;}
+.btn-ghost{background:var(--surface2);border:1px solid var(--border);color:var(--text2);}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent);}
+
+.row{display:flex;gap:10px;flex-wrap:wrap;}
+.row-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+.row-4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+.col{display:flex;flex-direction:column;gap:10px;}
+
+input[type=text],input[type=number],input[type=password],select,textarea{
+  background:var(--bg);border:1px solid var(--border2);border-radius:var(--r);
+  padding:9px 12px;color:var(--text);font-family:var(--font-b);font-size:0.9rem;width:100%;
+}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow);}
+label.field-label{display:block;font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:4px;}
+
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:0.73rem;font-weight:600;}
+.badge-live{background:rgba(239,68,68,.15);color:var(--red);border:1px solid var(--red);}
+.badge-idle{background:var(--surface2);color:var(--text3);border:1px solid var(--border);}
+.badge-rec{background:rgba(239,68,68,.15);color:var(--red);border:1px solid var(--red);}
+.badge-ok{background:rgba(16,185,129,.15);color:var(--green);border:1px solid var(--green);}
+
+.divider{height:1px;background:var(--border);margin:14px 0;}
+
+.empty-state{text-align:center;padding:32px 16px;color:var(--text3);}
+.empty-state .empty-icon{font-size:2.5rem;margin-bottom:8px;}
+
+/* ═══════════════════════════════════════════════════════════════════
+   SCOREBOARD
+═══════════════════════════════════════════════════════════════════ */
+.scoreboard{
+  background:linear-gradient(135deg,var(--surface2) 0%,var(--surface3) 100%);
+  border:1px solid var(--border2);border-radius:var(--r2);padding:20px;margin-bottom:16px;
+}
+.sb-teams{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.sb-team{text-align:center;flex:1;}
+.sb-name{font-family:var(--font-h);font-size:1.1rem;font-weight:700;color:var(--text2);text-transform:uppercase;}
+.sb-score{font-family:var(--font-h);font-size:3rem;font-weight:700;color:var(--accent);line-height:1;}
+.sb-vs{font-family:var(--font-h);font-size:1.4rem;color:var(--text3);}
+.sb-meta{text-align:center;font-size:0.8rem;color:var(--text3);margin-top:8px;}
+
+/* ── Cricket scoring buttons ── */
+.cricket-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;}
+@media(min-width:400px){.cricket-grid{grid-template-columns:repeat(5,1fr);}}
+.ball-btn{
+  background:var(--surface2);border:2px solid var(--border2);border-radius:10px;
+  padding:14px 6px;font-family:var(--font-h);font-size:1.4rem;font-weight:700;
+  text-align:center;cursor:pointer;transition:all 0.12s;color:var(--text);
+}
+.ball-btn:active{transform:scale(0.92);}
+.ball-btn.b4{background:rgba(16,185,129,.12);border-color:var(--green);color:var(--green);}
+.ball-btn.b6{background:rgba(6,182,212,.12);border-color:var(--cyan);color:var(--cyan);}
+.ball-btn.bw{background:rgba(239,68,68,.12);border-color:var(--red);color:var(--red);}
+.ball-btn.be{background:rgba(245,158,11,.12);border-color:var(--yellow);color:var(--yellow);font-size:1rem;}
+
+/* ── Over dots ── */
+.over-dots{display:flex;gap:5px;flex-wrap:wrap;padding:2px 0;}
+.od{
+  width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-h);font-weight:700;font-size:0.82rem;
+  background:var(--surface2);border:2px solid var(--border2);color:var(--text2);
+}
+.od.w{border-color:var(--red);color:var(--red);}
+.od.four{border-color:var(--green);color:var(--green);}
+.od.six{border-color:var(--cyan);color:var(--cyan);}
+
+/* ═══════════════════════════════════════════════════════════════════
+   CAMERA PREVIEW
+═══════════════════════════════════════════════════════════════════ */
+.preview-wrap{
+  position:relative;width:100%;padding-top:56.25%;background:#000;
+  border-radius:var(--r);overflow:hidden;border:1px solid var(--border);
+}
+.preview-wrap img,.preview-wrap video,.preview-wrap iframe{
+  position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;
+}
+.preview-label{
+  position:absolute;top:8px;left:8px;background:rgba(0,0,0,.75);
+  color:var(--accent);font-size:0.68rem;font-weight:700;padding:2px 8px;
+  border-radius:4px;text-transform:uppercase;letter-spacing:1px;z-index:2;
+}
+.preview-err{
+  position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;color:var(--text3);font-size:0.85rem;gap:6px;
+}
+
+/* ─── Camera source list ─── */
+.cam-list{display:flex;flex-direction:column;gap:6px;}
+.cam-item{
+  display:flex;align-items:center;justify-content:space-between;
+  background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);
+  padding:10px 12px;
+}
+.cam-item.active-src{border-color:var(--accent);}
+.cam-info{flex:1;}
+.cam-label{font-weight:600;font-size:0.9rem;}
+.cam-url{font-size:0.75rem;color:var(--text3);word-break:break-all;}
+.cam-actions{display:flex;gap:6px;flex-shrink:0;margin-left:10px;}
+
+/* ═══════════════════════════════════════════════════════════════════
+   STREAM / RECORD PANELS
+═══════════════════════════════════════════════════════════════════ */
+.status-row{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+.big-action-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+/* ═══════════════════════════════════════════════════════════════════
+   REPLAY
+═══════════════════════════════════════════════════════════════════ */
+.recording-list{display:flex;flex-direction:column;gap:8px;}
+.rec-item{
+  display:flex;align-items:center;justify-content:space-between;
+  background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;
+}
+.rec-item-info{flex:1;}
+.rec-item-name{font-weight:600;font-size:0.88rem;color:var(--text);}
+.rec-item-meta{font-size:0.75rem;color:var(--text3);margin-top:2px;}
+.rec-item-actions{display:flex;gap:6px;flex-shrink:0;margin-left:10px;}
+
+.video-controls{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;}
+
+/* ═══════════════════════════════════════════════════════════════════
+   AI TRACKING
+═══════════════════════════════════════════════════════════════════ */
+.ai-status-bar{
+  display:flex;align-items:center;gap:10px;
+  background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);
+  padding:10px 14px;margin-bottom:12px;
+}
+.ai-dot{width:10px;height:10px;border-radius:50%;background:var(--text3);flex-shrink:0;}
+.ai-dot.on{background:var(--green);box-shadow:0 0 8px var(--green);}
+.det-grid{display:flex;flex-wrap:wrap;gap:6px;}
+.det-chip{
+  background:var(--surface3);border:1px solid var(--border2);border-radius:20px;
+  padding:3px 10px;font-size:0.75rem;color:var(--cyan);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   EVENT POPUP
+═══════════════════════════════════════════════════════════════════ */
+#event-popup{
+  position:fixed;top:50%;left:50%;
+  transform:translate(-50%,-50%) scale(0);
+  background:rgba(8,11,18,0.95);
+  border:3px solid var(--accent);border-radius:20px;
+  padding:28px 56px;text-align:center;z-index:9999;
+  font-family:var(--font-h);font-size:2.8rem;font-weight:700;color:var(--accent);
+  letter-spacing:4px;pointer-events:none;
+  transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  box-shadow:0 0 60px var(--accent-glow);
+}
+#event-popup.show{transform:translate(-50%,-50%) scale(1);}
+#event-popup.green{color:var(--green);border-color:var(--green);box-shadow:0 0 60px rgba(16,185,129,.3);}
+#event-popup.cyan{color:var(--cyan);border-color:var(--cyan);box-shadow:0 0 60px rgba(6,182,212,.3);}
+#event-popup.red{color:var(--red);border-color:var(--red);box-shadow:0 0 60px rgba(239,68,68,.3);}
+#event-popup.yellow{color:var(--yellow);border-color:var(--yellow);}
+
+/* ═══════════════════════════════════════════════════════════════════
+   RESPONSIVE: mobile — collapse sidebar to icon bar
+═══════════════════════════════════════════════════════════════════ */
+@media(max-width:600px){
+  :root{--sidebar-w:54px;}
+  .nav-label,.nav-arrow,.sub-nav{display:none!important;}
+  .nav-item{justify-content:center;padding:12px 0;}
+  .nav-icon{width:auto;}
+  .content{padding:14px;}
+}
+  </style>
+</head>
+<body>
+
+<!-- ══ LOGIN ════════════════════════════════════════════════════════════ -->
+<div id="login-screen">
+  <div class="login-logo">Sports<em>Caster</em> PRO</div>
+  <div class="login-card">
+    <h2>Sign In</h2>
+    <div class="field"><label>Username</label><input id="u" value="admin"/></div>
+    <div class="field"><label>Password</label><input type="password" id="p" value="admin"/></div>
+    <button class="btn-login" onclick="doLogin()">Sign In</button>
+    <div class="login-err" id="login-err"></div>
+  </div>
+</div>
+
+<!-- ══ APP ══════════════════════════════════════════════════════════════ -->
+<div id="app">
+
+  <!-- Top Bar -->
+  <div class="topbar">
+    <div class="topbar-brand">Sports<em>Caster</em> PRO</div>
+    <div class="topbar-right">
+      <span class="live-pill" id="live-pill">● LIVE</span>
+      <span class="rec-pill" id="rec-pill">⏺ REC</span>
+      <button class="btn-exit" onclick="doLogout()">Exit</button>
+    </div>
+  </div>
+
+  <!-- Layout -->
+  <div class="layout">
+
+    <!-- ══ SIDEBAR ═══════════════════════════════════════════════════ -->
+    <nav class="sidebar" id="sidebar">
+
+      <div class="nav-section">
+        <!-- Scoring -->
+        <div class="nav-item" id="nav-scoring" onclick="toggleNav('scoring')">
+          <span class="nav-icon">🏅</span>
+          <span class="nav-label">Scoring</span>
+          <span class="nav-arrow">▶</span>
+        </div>
+        <div class="sub-nav" id="sub-scoring">
+          <div class="sub-item" onclick="goTo('scoring','cricket')">Cricket</div>
+          <div class="sub-item" onclick="goTo('scoring','football')">Football</div>
+          <div class="sub-item" onclick="goTo('scoring','hockey')">Hockey</div>
+          <div class="sub-item" onclick="goTo('scoring','volleyball')">Volleyball</div>
+          <div class="sub-item" onclick="goTo('scoring','custom')">Custom</div>
+        </div>
+
+        <!-- Camera -->
+        <div class="nav-item" id="nav-camera" onclick="toggleNav('camera')">
+          <span class="nav-icon">📷</span>
+          <span class="nav-label">Camera</span>
+          <span class="nav-arrow">▶</span>
+        </div>
+        <div class="sub-nav" id="sub-camera">
+          <div class="sub-item" onclick="goTo('camera','usb')">USB Camera</div>
+          <div class="sub-item" onclick="goTo('camera','ip')">IP Camera</div>
+          <div class="sub-item" onclick="goTo('camera','mobile')">Mobile Camera</div>
+          <div class="sub-item" onclick="goTo('camera','saved')">Saved Sources</div>
+        </div>
+
+        <!-- Streaming -->
+        <div class="nav-item" id="nav-streaming" onclick="toggleNav('streaming')">
+          <span class="nav-icon">📡</span>
+          <span class="nav-label">Streaming</span>
+          <span class="nav-arrow">▶</span>
+        </div>
+        <div class="sub-nav" id="sub-streaming">
+          <div class="sub-item" onclick="goTo('streaming','rtmp')">RTMP Settings</div>
+          <div class="sub-item" onclick="goTo('streaming','live')">Live Stream</div>
+          <div class="sub-item" onclick="goTo('streaming','recording')">Recording</div>
+        </div>
+
+        <!-- Recording (separate from streaming) -->
+        <div class="nav-item" id="nav-recording" onclick="toggleNav('recording')">
+          <span class="nav-icon">⏺</span>
+          <span class="nav-label">Recording</span>
+          <span class="nav-arrow">▶</span>
+        </div>
+        <div class="sub-nav" id="sub-recording">
+          <div class="sub-item" onclick="goTo('recording','control')">Record Control</div>
+          <div class="sub-item" onclick="goTo('recording','files')">Saved Files</div>
+        </div>
+
+        <!-- Replay -->
+        <div class="nav-item" id="nav-replay" onclick="toggleNav('replay')">
+          <span class="nav-icon">⏮</span>
+          <span class="nav-label">Replay</span>
+          <span class="nav-arrow">▶</span>
+        </div>
+        <div class="sub-nav" id="sub-replay">
+          <div class="sub-item" onclick="goTo('replay','recordings')">Recordings</div>
+          <div class="sub-item" onclick="goTo('replay','reviews')">Reviews</div>
+        </div>
+
+        <!-- Review -->
+        <div class="nav-item" id="nav-review" onclick="toggleNav('review')">
+          <span class="nav-icon">🔍</span>
+          <span class="nav-label">Review</span>
+          <span class="nav-arrow">▶</span>
+        </div>
+        <div class="sub-nav" id="sub-review">
+          <div class="sub-item" onclick="goTo('review','save')">Save Review</div>
+          <div class="sub-item" onclick="goTo('review','clips')">Review Clips</div>
+        </div>
+
+        <!-- AI Tracking -->
+        <div class="nav-item" id="nav-ai" onclick="toggleNav('ai')">
+          <span class="nav-icon">🤖</span>
+          <span class="nav-label">AI Tracking</span>
+          <span class="nav-arrow">▶</span>
+        </div>
+        <div class="sub-nav" id="sub-ai">
+          <div class="sub-item" onclick="goTo('ai','detection')">Player Detection</div>
+          <div class="sub-item" onclick="goTo('ai','ball')">Ball Tracking</div>
+          <div class="sub-item" onclick="goTo('ai','training')">Training</div>
+          <div class="sub-item" onclick="goTo('ai','models')">Model Upload</div>
+        </div>
+
+        <!-- Settings -->
+        <div class="nav-item" id="nav-settings" onclick="toggleNav('settings')">
+          <span class="nav-icon">⚙️</span>
+          <span class="nav-label">Settings</span>
+          <span class="nav-arrow">▶</span>
+        </div>
+        <div class="sub-nav" id="sub-settings">
+          <div class="sub-item" onclick="goTo('settings','general')">General</div>
+          <div class="sub-item" onclick="goTo('settings','hotspot')">Hotspot</div>
+        </div>
+      </div>
+
+    </nav>
+
+    <!-- ══ CONTENT ════════════════════════════════════════════════════ -->
+    <div class="content">
+
+      <!-- ── SCORING ────────────────────────────────────────────── -->
+      <div class="page" id="page-scoring">
+
+        <!-- Cricket -->
+        <div class="subpage" id="sp-scoring-cricket">
+          <div class="card" style="padding:10px 14px;background:var(--surface2);border-radius:var(--r2);display:flex;align-items:center;justify-content:space-between;margin-bottom:0">
+            <span style="font-size:0.82rem;color:var(--text2)">🏏 Full Cricket Admin (recommended)</span>
+            <a href="/admin/cricket.html" target="_blank" class="btn btn-accent btn-xs" style="text-decoration:none">Open Admin ↗</a>
+          </div>
+          <div class="card" id="new-match-form-cricket">
+            <div class="card-title">Quick Match (basic)</div>
+            <div class="col">
+              <div><label class="field-label">Team A</label><input id="cr-team-a" value="Team A"/></div>
+              <div><label class="field-label">Team B</label><input id="cr-team-b" value="Team B"/></div>
+              <div><label class="field-label">Overs</label><input type="number" id="cr-overs" value="20" min="1" max="50"/></div>
+              <div>
+                <label class="field-label">Players A — one per line (11 players)</label>
+                <textarea id="cr-players-a" rows="6" placeholder="Player 1
+Player 2
+Player 3..."></textarea>
+                <div class="row" style="margin-top:4px;gap:6px">
+                  <button class="btn btn-ghost btn-xs" onclick="loadSavedTeams('cr-load-team-a','cricket');document.getElementById('cr-load-row-a').style.display='flex'">📂 Load Team</button>
+                  <button class="btn btn-ghost btn-xs" onclick="savePlayers(document.getElementById('cr-team-a').value,document.getElementById('cr-players-a').value,'cricket')">💾 Save Team</button>
+                </div>
+                <div id="cr-load-row-a" style="display:none;gap:6px;margin-top:4px">
+                  <select id="cr-load-team-a" style="flex:1"></select>
+                  <button class="btn btn-accent btn-xs" onclick="loadPlayers(document.getElementById('cr-load-team-a').value,'cr-players-a','cricket')">Load</button>
+                </div>
+              </div>
+              <div>
+                <label class="field-label">Players B — one per line (11 players)</label>
+                <textarea id="cr-players-b" rows="6" placeholder="Player 1
+Player 2
+Player 3..."></textarea>
+                <div class="row" style="margin-top:4px;gap:6px">
+                  <button class="btn btn-ghost btn-xs" onclick="loadSavedTeams('cr-load-team-b','cricket');document.getElementById('cr-load-row-b').style.display='flex'">📂 Load Team</button>
+                  <button class="btn btn-ghost btn-xs" onclick="savePlayers(document.getElementById('cr-team-b').value,document.getElementById('cr-players-b').value,'cricket')">💾 Save Team</button>
+                </div>
+                <div id="cr-load-row-b" style="display:none;gap:6px;margin-top:4px">
+                  <select id="cr-load-team-b" style="flex:1"></select>
+                  <button class="btn btn-accent btn-xs" onclick="loadPlayers(document.getElementById('cr-load-team-b').value,'cr-players-b','cricket')">Load</button>
+                </div>
+              </div>
+              <button class="btn btn-accent" onclick="startMatch('cricket')">▶ Start Match</button>
+            </div>
+          </div>
+          <div id="cricket-scoring-ui" style="display:none">
+            <div class="scoreboard" id="sb-cricket">
+              <div class="sb-teams">
+                <div class="sb-team"><div class="sb-name" id="cr-sb-a">Team A</div><div class="sb-score" id="cr-sb-sa">0/0</div></div>
+                <div class="sb-vs">vs</div>
+                <div class="sb-team"><div class="sb-name" id="cr-sb-b">Team B</div><div class="sb-score" id="cr-sb-sb">0</div></div>
+              </div>
+              <div class="sb-meta" id="cr-sb-meta">Overs: 0.0 | Inn: 1</div>
+            </div>
+            <!-- Players -->
+            <div class="card">
+              <div class="card-title">Players</div>
+              <div class="col">
+                <div class="row-2">
+                  <div><label class="field-label">Striker</label><input id="cr-striker" placeholder="Striker" onblur="selectPlayer('striker',this.value)"/></div>
+                  <div><label class="field-label">Non-Striker</label><input id="cr-nonstriker" placeholder="Non-Striker" onblur="selectPlayer('non_striker',this.value)"/></div>
+                </div>
+                <div><label class="field-label">Bowler</label><input id="cr-bowler" placeholder="Bowler" onblur="selectPlayer('bowler',this.value)"/></div>
+              </div>
+            </div>
+            <!-- Current Over -->
+            <div class="card">
+              <div class="card-title">Current Over</div>
+              <div class="over-dots" id="cr-over-dots"></div>
+            </div>
+            <!-- Scoring buttons -->
+            <div class="card">
+              <div class="card-title">Score</div>
+              <div class="cricket-grid">
+                <div class="ball-btn" onclick="scoreEvt('run_0')">0</div>
+                <div class="ball-btn" onclick="scoreEvt('run_1')">1</div>
+                <div class="ball-btn" onclick="scoreEvt('run_2')">2</div>
+                <div class="ball-btn" onclick="scoreEvt('run_3')">3</div>
+                <div class="ball-btn b4" onclick="scoreEvt('run_4')">4</div>
+                <div class="ball-btn b6" onclick="scoreEvt('run_6')">6</div>
+                <div class="ball-btn bw" onclick="scoreEvt('wicket')">WKT</div>
+                <div class="ball-btn be" onclick="scoreEvt('wide')">Wd</div>
+                <div class="ball-btn be" onclick="scoreEvt('no_ball')">NB</div>
+                <div class="ball-btn be" onclick="scoreEvt('bye')">Bye</div>
+                <div class="ball-btn be" onclick="scoreEvt('leg_bye')">LB</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Football -->
+        <div class="subpage" id="sp-scoring-football">
+          <div class="card" style="padding:10px 14px;background:var(--surface2);border-radius:var(--r2);display:flex;align-items:center;justify-content:space-between;margin-bottom:0">
+            <span style="font-size:0.82rem;color:var(--text2)">⚽ Full Football Admin</span>
+            <a href="/admin/football.html" target="_blank" class="btn btn-accent btn-xs" style="text-decoration:none">Open Admin ↗</a>
+          </div>
+          <div class="card" id="new-match-form-football">
+            <div class="card-title">New Football Match</div>
+            <div class="col">
+              <div><label class="field-label">Team A</label><input id="fb-team-a" value="Home"/></div>
+              <div><label class="field-label">Team B</label><input id="fb-team-b" value="Away"/></div>
+              <button class="btn btn-accent" onclick="startMatch('football')">▶ Start Match</button>
+            </div>
+          </div>
+          <div id="football-scoring-ui" style="display:none">
+            <div class="scoreboard">
+              <div class="sb-teams">
+                <div class="sb-team"><div class="sb-name" id="fb-sb-a">Home</div><div class="sb-score" id="fb-sb-sa">0</div></div>
+                <div class="sb-vs">vs</div>
+                <div class="sb-team"><div class="sb-name" id="fb-sb-b">Away</div><div class="sb-score" id="fb-sb-sb">0</div></div>
+              </div>
+              <div class="sb-meta" id="fb-sb-meta">Half 1</div>
+            </div>
+            <div class="card">
+              <div class="card-title">Goals</div>
+              <div class="row-2">
+                <button class="btn btn-success" style="padding:20px;font-size:1.2rem" onclick="scoreEvt('goal_a')">⚽ <span id="fb-btn-a">Home</span></button>
+                <button class="btn btn-success" style="padding:20px;font-size:1.2rem" onclick="scoreEvt('goal_b')">⚽ <span id="fb-btn-b">Away</span></button>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-title">Cards</div>
+              <div class="row-4">
+                <button class="btn btn-warn btn-sm" onclick="scoreEvt('yellow_a')">🟡 Home</button>
+                <button class="btn btn-danger btn-sm" onclick="scoreEvt('red_a')">🟥 Home</button>
+                <button class="btn btn-warn btn-sm" onclick="scoreEvt('yellow_b')">🟡 Away</button>
+                <button class="btn btn-danger btn-sm" onclick="scoreEvt('red_b')">🟥 Away</button>
+              </div>
+            </div>
+            <div class="card"><button class="btn btn-ghost" style="width:100%" onclick="scoreEvt('half')">🔁 Half Time</button></div>
+          </div>
+        </div>
+
+        <!-- Hockey -->
+        <div class="subpage" id="sp-scoring-hockey">
+          <div class="card" style="padding:10px 14px;background:var(--surface2);border-radius:var(--r2);display:flex;align-items:center;justify-content:space-between;margin-bottom:0">
+            <span style="font-size:0.82rem;color:var(--text2)">🏑 Full Hockey Admin</span>
+            <a href="/admin/hockey.html" target="_blank" class="btn btn-accent btn-xs" style="text-decoration:none">Open Admin ↗</a>
+          </div>
+          <div class="card" id="new-match-form-hockey">
+            <div class="card-title">New Hockey Match</div>
+            <div class="col">
+              <div><label class="field-label">Team A</label><input id="hk-team-a" value="Team A"/></div>
+              <div><label class="field-label">Team B</label><input id="hk-team-b" value="Team B"/></div>
+              <button class="btn btn-accent" onclick="startMatch('hockey')">▶ Start Match</button>
+            </div>
+          </div>
+          <div id="hockey-scoring-ui" style="display:none">
+            <div class="scoreboard">
+              <div class="sb-teams">
+                <div class="sb-team"><div class="sb-name" id="hk-sb-a">A</div><div class="sb-score" id="hk-sb-sa">0</div></div>
+                <div class="sb-vs">vs</div>
+                <div class="sb-team"><div class="sb-name" id="hk-sb-b">B</div><div class="sb-score" id="hk-sb-sb">0</div></div>
+              </div>
+              <div class="sb-meta" id="hk-sb-meta">Quarter 1</div>
+            </div>
+            <div class="card">
+              <div class="card-title">Goals & Penalty Corners</div>
+              <div class="row-2" style="gap:8px;margin-bottom:8px">
+                <button class="btn btn-success" style="padding:18px" onclick="scoreEvt('goal_a')">🥅 Goal A</button>
+                <button class="btn btn-success" style="padding:18px" onclick="scoreEvt('goal_b')">🥅 Goal B</button>
+              </div>
+              <div class="row-2">
+                <button class="btn btn-warn btn-sm" onclick="scoreEvt('pc_a')">PC Team A</button>
+                <button class="btn btn-warn btn-sm" onclick="scoreEvt('pc_b')">PC Team B</button>
+              </div>
+            </div>
+            <div class="card"><button class="btn btn-ghost" style="width:100%" onclick="scoreEvt('next_quarter')">Next Quarter ▶</button></div>
+          </div>
+        </div>
+
+        <!-- Volleyball -->
+        <div class="subpage" id="sp-scoring-volleyball">
+          <div class="card" style="padding:10px 14px;background:var(--surface2);border-radius:var(--r2);display:flex;align-items:center;justify-content:space-between;margin-bottom:0">
+            <span style="font-size:0.82rem;color:var(--text2)">🏐 Full Volleyball Admin</span>
+            <a href="/admin/volleyball.html" target="_blank" class="btn btn-accent btn-xs" style="text-decoration:none">Open Admin ↗</a>
+          </div>
+          <div class="card" id="new-match-form-volleyball">
+            <div class="card-title">New Volleyball Match</div>
+            <div class="col">
+              <div><label class="field-label">Team A</label><input id="vb-team-a" value="Team A"/></div>
+              <div><label class="field-label">Team B</label><input id="vb-team-b" value="Team B"/></div>
+              <button class="btn btn-accent" onclick="startMatch('volleyball')">▶ Start Match</button>
+            </div>
+          </div>
+          <div id="volleyball-scoring-ui" style="display:none">
+            <div class="scoreboard">
+              <div class="sb-teams">
+                <div class="sb-team"><div class="sb-name" id="vb-sb-a">A</div><div class="sb-score" id="vb-sb-sa">0</div></div>
+                <div class="sb-vs">vs</div>
+                <div class="sb-team"><div class="sb-name" id="vb-sb-b">B</div><div class="sb-score" id="vb-sb-sb">0</div></div>
+              </div>
+              <div class="sb-meta" id="vb-sb-meta">Set 1: 0 - 0</div>
+            </div>
+            <div class="card">
+              <div class="card-title">Points</div>
+              <div class="row-2">
+                <button class="btn btn-accent" style="padding:24px;font-size:1.5rem" onclick="scoreEvt('point_a')">+1 A</button>
+                <button class="btn btn-accent" style="padding:24px;font-size:1.5rem" onclick="scoreEvt('point_b')">+1 B</button>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-title">Controls</div>
+              <div class="row-3">
+                <button class="btn btn-warn btn-sm" onclick="scoreEvt('timeout_a')">⏸ TO A</button>
+                <button class="btn btn-warn btn-sm" onclick="scoreEvt('timeout_b')">⏸ TO B</button>
+                <button class="btn btn-ghost btn-sm" onclick="scoreEvt('set_over')">Set Over</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Custom -->
+        <div class="subpage" id="sp-scoring-custom">
+          <div class="card" style="padding:10px 14px;background:var(--surface2);border-radius:var(--r2);display:flex;align-items:center;justify-content:space-between;margin-bottom:0">
+            <span style="font-size:0.82rem;color:var(--text2)">🎯 Full Custom Admin</span>
+            <a href="/admin/custom.html" target="_blank" class="btn btn-accent btn-xs" style="text-decoration:none">Open Admin ↗</a>
+          </div>
+          <div class="card" id="new-match-form-custom">
+            <div class="card-title">New Custom Match</div>
+            <div class="col">
+              <div><label class="field-label">Team A</label><input id="cu-team-a" value="Team A"/></div>
+              <div><label class="field-label">Team B</label><input id="cu-team-b" value="Team B"/></div>
+              <button class="btn btn-accent" onclick="startMatch('custom')">▶ Start Match</button>
+            </div>
+          </div>
+          <div id="custom-scoring-ui" style="display:none">
+            <div class="scoreboard">
+              <div class="sb-teams">
+                <div class="sb-team"><div class="sb-name" id="cu-sb-a">A</div><div class="sb-score" id="cu-sb-sa">0</div></div>
+                <div class="sb-vs">vs</div>
+                <div class="sb-team"><div class="sb-name" id="cu-sb-b">B</div><div class="sb-score" id="cu-sb-sb">0</div></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="row-2">
+                <button class="btn btn-accent" style="padding:22px;font-size:1.4rem" onclick="scoreEvt('score_a')">+1 A</button>
+                <button class="btn btn-accent" style="padding:22px;font-size:1.4rem" onclick="scoreEvt('score_b')">+1 B</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div><!-- /page-scoring -->
+
+      <!-- ── CAMERA ──────────────────────────────────────────────── -->
+      <div class="page" id="page-camera">
+
+        <!-- USB Camera -->
+        <div class="subpage" id="sp-camera-usb">
+          <div class="card">
+            <div class="card-title">USB / Webcam</div>
+            <div class="col">
+              <div><label class="field-label">Camera Index</label>
+                <select id="usb-index">
+                  <option value="0">Camera 0</option>
+                  <option value="1">Camera 1</option>
+                  <option value="2">Camera 2</option>
+                </select>
+              </div>
+              <div class="row">
+                <button class="btn btn-ghost btn-sm" onclick="detectUSB()">🔍 Auto Detect</button>
+                <button class="btn btn-accent btn-sm" onclick="setUsbActive()">✓ Set Active</button>
+              </div>
+              <div id="usb-detect-result" style="font-size:0.8rem;color:var(--text3)"></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">Preview</div>
+            <div class="preview-wrap" id="usb-preview-wrap">
+              <span class="preview-label">USB CAM</span>
+              <div class="preview-err">📷<br>Select camera and click Set Active</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- IP Camera -->
+        <div class="subpage" id="sp-camera-ip">
+          <div class="card">
+            <div class="card-title">Add IP Camera</div>
+            <div class="col">
+              <div><label class="field-label">Label</label><input id="ip-label" placeholder="Living Room Cam"/></div>
+              <div><label class="field-label">URL</label><input id="ip-url" placeholder="http://192.168.1.10:8080/video"/></div>
+              <div class="row">
+                <button class="btn btn-ghost btn-sm" onclick="testIpCam()">🔗 Test</button>
+                <button class="btn btn-ghost btn-sm" onclick="previewIpCam()">👁 Preview</button>
+                <button class="btn btn-accent btn-sm" onclick="saveIpCam()">💾 Save</button>
+              </div>
+              <div id="ip-test-result" style="font-size:0.82rem"></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">Preview</div>
+            <div class="preview-wrap" id="ip-preview-wrap">
+              <span class="preview-label">IP CAM</span>
+              <div class="preview-err">📷<br>Enter URL and click Preview</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mobile Camera -->
+        <div class="subpage" id="sp-camera-mobile">
+          <div class="card">
+            <div class="card-title">Mobile Camera (IP Webcam)</div>
+            <div style="background:var(--surface2);border-radius:var(--r);padding:14px;margin-bottom:14px;font-size:0.85rem;color:var(--text2);line-height:1.7">
+              1. Install <strong>IP Webcam</strong> app on Android<br>
+              2. Tap <strong>Start Server</strong><br>
+              3. Note the IP shown (e.g. 192.168.4.2:8080)<br>
+              4. Enter URL below
+            </div>
+            <div class="col">
+              <div><label class="field-label">Phone IP:Port</label>
+                <input id="mobile-url" placeholder="http://192.168.4.2:8080/video"/>
+              </div>
+              <div class="row">
+                <button class="btn btn-ghost btn-sm" onclick="previewMobile()">👁 Preview</button>
+                <button class="btn btn-accent btn-sm" onclick="saveMobileCam()">💾 Save & Set Active</button>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">Preview</div>
+            <div class="preview-wrap" id="mobile-preview-wrap">
+              <span class="preview-label">MOBILE CAM</span>
+              <div class="preview-err">📱<br>Enter phone URL and click Preview</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Saved Sources -->
+        <div class="subpage" id="sp-camera-saved">
+          <div class="card">
+            <div class="card-title">Saved Camera Sources</div>
+            <div id="saved-cams-list">
+              <div class="empty-state"><div class="empty-icon">📷</div>No saved cameras</div>
+            </div>
+            <div style="margin-top:10px">
+              <button class="btn btn-ghost btn-sm" onclick="loadSavedCams()">🔄 Refresh</button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">Active Camera Preview</div>
+            <div class="preview-wrap" id="active-preview-wrap">
+              <span class="preview-label">ACTIVE</span>
+              <div class="preview-err" id="active-preview-err">No active camera</div>
+            </div>
+          </div>
+          <!-- Overlay preview -->
+          <div class="card">
+            <div class="card-title">Overlay Preview</div>
+            <div class="preview-wrap">
+              <span class="preview-label">OVERLAY</span>
+              <iframe src="/overlay/index.html" style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;background:#000;pointer-events:none"></iframe>
+            </div>
+          </div>
+        </div>
+      </div><!-- /page-camera -->
+
+      <!-- ── STREAMING ───────────────────────────────────────────── -->
+      <div class="page" id="page-streaming">
+
+        <!-- RTMP Settings -->
+        <div class="subpage" id="sp-streaming-rtmp">
+          <div class="card">
+            <div class="card-title">RTMP Configuration</div>
+            <div class="col">
+              <div>
+                <label class="field-label">Platform</label>
+                <select id="st-platform" onchange="onPlatformChange()">
+                  <option value="youtube">YouTube Live</option>
+                  <option value="facebook">Facebook Live</option>
+                  <option value="custom">Custom RTMP</option>
+                </select>
+              </div>
+              <div id="custom-url-row" style="display:none">
+                <label class="field-label">Custom RTMP URL</label>
+                <input id="st-url" placeholder="rtmp://your-server/live"/>
+              </div>
+              <div>
+                <label class="field-label">Stream Key</label>
+                <input id="st-key" type="password" placeholder="your-stream-key"/>
+              </div>
+              <div>
+                <label class="field-label">Bitrate</label>
+                <select id="st-bitrate">
+                  <option value="1500k">1500k (Low)</option>
+                  <option value="2500k" selected>2500k (Medium)</option>
+                  <option value="4000k">4000k (High)</option>
+                </select>
+              </div>
+              <button class="btn btn-accent" onclick="saveStreamSettings()">💾 Save Settings</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Live Stream -->
+        <div class="subpage" id="sp-streaming-live">
+          <div class="card">
+            <div class="card-title">Camera Source for Stream</div>
+            <div class="col">
+              <div style="display:flex;gap:8px">
+                <select id="stream-cam-select" style="flex:1">
+                  <option value="">Select camera...</option>
+                </select>
+                <button class="btn btn-ghost btn-xs" onclick="loadStreamDevices()" style="white-space:nowrap;padding:6px 10px">🔍 Detect</button>
+              </div>
+              <div id="stream-custom-url-row" style="display:none">
+                <label class="field-label">Camera URL (RTSP / HTTP)</label>
+                <input id="stream-custom-url" placeholder="rtsp://192.168.1.x/stream or http://ip:8080/video"/>
+              </div>
+              <div id="stream-devices-info" style="font-size:0.78rem;color:var(--text3)">Click Detect to list available cameras</div>
+              <button class="btn btn-accent btn-sm" onclick="applyStreamCamera()">✓ Use Selected Camera for Stream</button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">Stream Control</div>
+            <div class="status-row">
+              <span class="badge badge-idle" id="stream-badge">● Idle</span>
+              <span id="stream-platform-display" style="color:var(--text3);font-size:0.82rem"></span>
+            </div>
+            <div class="big-action-row" style="margin-bottom:12px">
+              <button class="btn btn-danger" id="btn-go-live" onclick="startStream()">▶ Go Live</button>
+              <button class="btn btn-ghost" id="btn-stop-live" onclick="stopStream()" disabled>■ Stop Stream</button>
+            </div>
+            <div style="font-size:0.8rem;color:var(--text3)">
+              Configure stream key in RTMP Settings before going live.
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">Camera Devices <button class="btn btn-ghost btn-xs" style="margin-left:8px" onclick="loadStreamDevices()">🔍 Detect</button></div>
+            <div id="stream-devices-info" style="font-size:0.82rem;color:var(--text3);line-height:1.8">Click Detect to list cameras</div>
+          </div>
+          <div class="card">
+            <div class="card-title">FFmpeg Log <button class="btn btn-ghost btn-xs" style="margin-left:8px" onclick="loadStreamLog()">🔄 Refresh</button></div>
+            <pre id="stream-log-output" style="font-size:0.72rem;color:var(--text3);max-height:180px;overflow-y:auto;white-space:pre-wrap;background:var(--bg);border-radius:6px;padding:10px">No log yet.</pre>
+          </div>
+          <div class="card">
+            <div class="card-title">Overlay Preview</div>
+            <div class="preview-wrap" id="stream-preview-wrap">
+              <span class="preview-label">OVERLAY</span>
+              <iframe src="/overlay/index.html" style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;background:#000;pointer-events:none"></iframe>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recording (kept for backwards nav compat) -->
+        <div class="subpage" id="sp-streaming-recording">
+          <div class="card">
+            <div class="card-title">Local Recording</div>
+            <div class="status-row">
+              <span class="badge badge-idle" id="rec-badge">● Idle</span>
+              <span id="rec-file-display" style="color:var(--text3);font-size:0.8rem"></span>
+            </div>
+            <div class="big-action-row" style="margin-bottom:12px">
+              <button class="btn btn-danger" id="btn-start-rec" onclick="startRecording()">⏺ Start Recording</button>
+              <button class="btn btn-ghost" id="btn-stop-rec" onclick="stopRecording()" disabled>■ Stop Recording</button>
+            </div>
+            <div style="font-size:0.8rem;color:var(--text3)">
+              Recordings saved to /recordings/ — keeps last 5 automatically.
+            </div>
+          </div>
+        </div>
+      </div><!-- /page-streaming -->
+
+      <!-- ── REPLAY ──────────────────────────────────────────────── -->
+      <div class="page" id="page-replay">
+
+        <!-- Recordings -->
+        <div class="subpage" id="sp-replay-recordings">
+          <div class="card">
+            <div class="card-title">Match Recordings <button class="btn btn-ghost btn-xs" style="margin-left:8px" onclick="loadRecordings()">🔄 Refresh</button></div>
+            <div id="rec-list-replay">
+              <div class="empty-state"><div class="empty-icon">📹</div>No recordings yet</div>
+            </div>
+          </div>
+          <div class="card" id="replay-player-card" style="display:none">
+            <div class="card-title" id="replay-player-title">Replay</div>
+            <video id="replay-video" controls style="width:100%;border-radius:var(--r);background:#000;max-height:300px"></video>
+            <div class="video-controls">
+              <button class="btn btn-ghost btn-xs" onclick="setSpeed(replay_vid,'0.1')">0.1×</button>
+              <button class="btn btn-ghost btn-xs" onclick="setSpeed(replay_vid,'0.25')">0.25×</button>
+              <button class="btn btn-ghost btn-xs" onclick="setSpeed(replay_vid,'0.5')">0.5×</button>
+              <button class="btn btn-accent btn-xs" onclick="setSpeed(replay_vid,'1')">1×</button>
+              <button class="btn btn-ghost btn-xs" onclick="stepFrame(replay_vid,-1)">◀ Frame</button>
+              <button class="btn btn-ghost btn-xs" onclick="stepFrame(replay_vid,1)">Frame ▶</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Reviews -->
+        <div class="subpage" id="sp-replay-reviews">
+          <div class="card">
+            <div class="card-title">Save Review Clip</div>
+            <div class="col">
+              <div>
+                <label class="field-label">Event Type</label>
+                <select id="review-event-type">
+                  <option value="wicket">Wicket Review</option>
+                  <option value="var">VAR Check</option>
+                  <option value="goal">Goal Review</option>
+                  <option value="penalty">Penalty Review</option>
+                </select>
+              </div>
+              <button class="btn btn-accent" onclick="saveReview()">💾 Save Last 12s</button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">Review Clips <button class="btn btn-ghost btn-xs" style="margin-left:8px" onclick="loadReviews()">🔄 Refresh</button></div>
+            <div id="rev-list">
+              <div class="empty-state"><div class="empty-icon">🔍</div>No review clips yet</div>
+            </div>
+          </div>
+          <div class="card" id="review-player-card" style="display:none">
+            <div class="card-title">Review Player</div>
+            <video id="review-video" controls style="width:100%;border-radius:var(--r);background:#000;max-height:300px"></video>
+            <div class="video-controls">
+              <button class="btn btn-ghost btn-xs" onclick="setSpeed(review_vid,'0.1')">0.1×</button>
+              <button class="btn btn-ghost btn-xs" onclick="setSpeed(review_vid,'0.25')">0.25×</button>
+              <button class="btn btn-ghost btn-xs" onclick="setSpeed(review_vid,'0.5')">0.5×</button>
+              <button class="btn btn-accent btn-xs" onclick="setSpeed(review_vid,'1')">1×</button>
+              <button class="btn btn-ghost btn-xs" onclick="stepFrame(review_vid,-1)">◀</button>
+              <button class="btn btn-ghost btn-xs" onclick="stepFrame(review_vid,1)">▶</button>
+              <button class="btn btn-success btn-xs" onclick="decisionOut()">OUT ✓</button>
+              <button class="btn btn-danger btn-xs" onclick="decisionNotOut()">NOT OUT ✗</button>
+            </div>
+            <div id="review-decision" style="text-align:center;margin-top:10px;font-family:var(--font-h);font-size:2rem;font-weight:700"></div>
+          </div>
+        </div>
+      </div><!-- /page-replay -->
+
+
+      <!-- ── RECORDING page ──────────────────────────────────────── -->
+      <div class="page" id="page-recording">
+        <div class="subpage" id="sp-recording-control">
+          <div class="card">
+            <div class="card-title">Recording Control</div>
+            <div class="status-row">
+              <span class="badge badge-idle" id="rec-badge">● Idle</span>
+              <span id="rec-file-display" style="color:var(--text3);font-size:0.8rem"></span>
+            </div>
+            <div class="big-action-row" style="margin-bottom:12px">
+              <button class="btn btn-danger" id="btn-start-rec" onclick="startRecording()">⏺ Start Recording</button>
+              <button class="btn btn-ghost" id="btn-stop-rec" onclick="stopRecording()" disabled>■ Stop Recording</button>
+            </div>
+            <div style="font-size:0.8rem;color:var(--text3);line-height:1.7">Saves to /recordings/ as MP4. Stops automatically if disk is full.
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">Disk Space</div>
+            <div id="storage-info" style="font-size:0.88rem;color:var(--text2);line-height:1.8">Loading...</div>
+            <div id="storage-warning" style="display:none;margin-top:6px;padding:8px 12px;background:rgba(239,68,68,.1);border:1px solid var(--red);border-radius:6px;font-size:0.82rem;color:var(--red)"></div>
+            <button class="btn btn-ghost btn-xs" onclick="loadStorage()" style="margin-top:8px">🔄 Refresh</button></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Camera Preview (Active Source)</div>
+            <div class="preview-wrap" id="rec-preview-wrap">
+              <span class="preview-label">CAM</span>
+              <div class="preview-err">Set active camera in Camera tab</div>
+            </div>
+          </div>
+        </div>
+        <div class="subpage" id="sp-recording-files">
+          <div class="card">
+            <div class="card-title">Saved Recordings <button class="btn btn-ghost btn-xs" style="margin-left:8px" onclick="loadRecordings()">🔄 Refresh</button></div>
+            <div id="rec-list-replay"><div class="empty-state"><div class="empty-icon">📹</div>No recordings yet</div></div>
+          </div>
+          <div class="card" id="replay-player-card" style="display:none">
+            <div class="card-title" id="replay-player-title">Replay</div>
+            <video id="replay-video" controls style="width:100%;border-radius:var(--r);background:#000;max-height:300px"></video>
+            <div class="video-controls">
+              <button class="btn btn-ghost btn-xs" onclick="setSpeed(replay_vid,'0.1')">0.1×</button>
+              <button class="btn btn-ghost btn-xs" onclick="setSpeed(replay_vid,'0.25')">0.25×</button>
+              <button class="btn btn-ghost btn-xs" onclick="setSpeed(replay_vid,'0.5')">0.5×</button>
+              <button class="btn btn-accent btn-xs" onclick="setSpeed(replay_vid,'1')">1×</button>
+              <button class="btn btn-ghost btn-xs" onclick="stepFrame(replay_vid,-1)">◀ Frame</button>
+              <button class="btn btn-ghost btn-xs" onclick="stepFrame(replay_vid,1)">Frame ▶</button>
+            </div>
+          </div>
+        </div>
+      </div><!-- /page-recording -->
+
+      <!-- ── REVIEW page ─────────────────────────────────────────── -->
+      <div class="page" id="page-review">
+        <div class="subpage" id="sp-review-save">
+          <div class="card">
+            <div class="card-title">Save Review Clip</div>
+            <div class="col">
+              <div>
+                <label class="field-label">Event Type</label>
+                <select id="review-event-type">
+                  <option value="wicket">Wicket Review</option>
+                  <option value="var">VAR Check</option>
+                  <option value="goal">Goal Review</option>
+                  <option value="penalty">Penalty Review</option>
+                </select>
+              </div>
+              <button class="btn btn-accent" id="btn-save-review" onclick="saveReview()">💾 Save Last 12s</button>
+              <div style="font-size:0.8rem;color:var(--text3)">Captures 12 seconds from active camera.</div>
+            </div>
+          </div>
+        </div>
+        <div class="subpage" id="sp-review-clips">
+          <div class="card">
+            <div class="card-title">Review Clips <button class="btn btn-ghost btn-xs" style="margin-left:8px" onclick="loadReviews()">🔄 Refresh</button></div>
+            <div id="rev-list"><div class="empty-state"><div class="empty-icon">🔍</div>No review clips yet</div></div>
+          </div>
+          <div class="card" id="review-player-card" style="display:none">
+            <div class="card-title">Review Player</div>
+            <video id="review-video" controls style="width:100%;border-radius:var(--r);background:#000;max-height:300px"></video>
+            <div class="video-controls">
+              <button class="btn btn-ghost btn-xs" onclick="setSpeed(review_vid,'0.1')">0.1×</button>
+              <button class="btn btn-ghost btn-xs" onclick="setSpeed(review_vid,'0.25')">0.25×</button>
+              <button class="btn btn-ghost btn-xs" onclick="setSpeed(review_vid,'0.5')">0.5×</button>
+              <button class="btn btn-accent btn-xs" onclick="setSpeed(review_vid,'1')">1×</button>
+              <button class="btn btn-ghost btn-xs" onclick="stepFrame(review_vid,-1)">◀</button>
+              <button class="btn btn-ghost btn-xs" onclick="stepFrame(review_vid,1)">▶</button>
+              <button class="btn btn-success btn-xs" onclick="decisionOut()">OUT ✓</button>
+              <button class="btn btn-danger btn-xs" onclick="decisionNotOut()">NOT OUT ✗</button>
+            </div>
+            <div id="review-decision" style="text-align:center;margin-top:10px;font-family:var(--font-h);font-size:2rem;font-weight:700"></div>
+          </div>
+        </div>
+      </div><!-- /page-review -->
+
+      <!-- ── AI TRACKING ─────────────────────────────────────────── -->
+      <div class="page" id="page-ai">
+
+        <!-- Player Detection -->
+        <div class="subpage" id="sp-ai-detection">
+          <div class="card">
+            <div class="card-title">AI Status</div>
+            <div class="ai-status-bar">
+              <div class="ai-dot" id="ai-dot"></div>
+              <span id="ai-status-text">Inactive</span>
+            </div>
+            <div class="row-2">
+              <button class="btn btn-success" onclick="startAI()">▶ Start Detection</button>
+              <button class="btn btn-ghost" onclick="stopAI()">■ Stop</button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">Upload Player Photo (for targeted tracking)</div>
+            <div class="col">
+              <div><label class="field-label">Reference photo</label>
+                <input type="file" id="player-photo-input" accept="image/*" style="padding:6px"/></div>
+              <button class="btn btn-accent btn-sm" onclick="uploadPlayerPhoto()">⬆ Upload Photo</button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">Live Detections</div>
+            <div class="det-grid" id="det-grid">
+              <span style="color:var(--text3);font-size:0.82rem">No detections</span>
+            </div>
+            <div style="margin-top:10px;font-size:0.8rem;color:var(--text3)">
+              Camera Pan — X: <span id="pan-x">0.50</span> | Y: <span id="pan-y">0.50</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Ball Tracking -->
+        <div class="subpage" id="sp-ai-ball">
+          <div class="card">
+            <div class="card-title">Ball Tracking</div>
+            <div class="ai-status-bar">
+              <div class="ai-dot" id="ball-ai-dot"></div>
+              <span id="ball-status-text">Tracking inactive</span>
+            </div>
+            <div style="margin:8px 0 12px">
+              <label class="field-label">Ball Type</label>
+              <select id="ball-type-select" onchange="setBallType(this.value)">
+                <option value="cricket">🏏 Cricket Ball</option>
+                <option value="football">⚽ Football</option>
+                <option value="hockey">🏑 Hockey Ball</option>
+                <option value="custom">🎯 Custom</option>
+              </select>
+            </div>
+            <div class="row-2" style="margin-bottom:10px">
+              <button class="btn btn-success" onclick="startBallTracking()">▶ Start Ball Detection</button>
+              <button class="btn btn-ghost" onclick="stopAI()">■ Stop</button>
+            </div>
+            <div style="font-size:0.8rem;color:var(--text3)">HoughCircles detection. Works on Pi without GPU.</div>
+            <div style="margin-top:12px">
+              <div style="font-size:0.8rem;color:var(--text3);margin-bottom:4px">Last Ball Position</div>
+              <div id="ball-pos" style="font-family:var(--font-h);font-size:1.1rem;color:var(--cyan)">—</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">Upload Ball Images (for training)</div>
+            <div class="col">
+              <div><label class="field-label">Ball reference images</label>
+                <input type="file" id="ball-img-input" accept="image/*" multiple style="padding:6px"/></div>
+              <button class="btn btn-accent btn-sm" onclick="uploadBallImages()">⬆ Upload Images</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Training -->
+        <div class="subpage" id="sp-ai-training">
+          <div class="card">
+            <div class="card-title">Training Data</div>
+            <div style="margin-bottom:14px">
+              <span id="snapshot-count" style="font-family:var(--font-h);font-size:1.6rem;font-weight:700;color:var(--accent)">0</span>
+              <span style="color:var(--text3);font-size:0.85rem;margin-left:6px">snapshots collected</span>
+            </div>
+            <div class="row">
+              <button class="btn btn-ghost btn-sm" onclick="captureSnapshot()">📷 Manual Snapshot</button>
+              <button class="btn btn-ghost btn-sm" onclick="loadSnapshots()">🔄 Refresh</button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">Train Model</div>
+            <div style="font-size:0.85rem;color:var(--text2);line-height:1.7;margin-bottom:14px">
+              Label snapshots: rename <code>ball_*.jpg</code> for ball images,<br>
+              other names = non-ball. Then click Train.
+            </div>
+            <button class="btn btn-accent" style="width:100%" onclick="triggerTraining()">🧠 Start Training</button>
+            <div id="training-status" style="margin-top:10px;font-size:0.82rem;color:var(--text3)"></div>
+          </div>
+        </div>
+
+        <!-- Model Upload -->
+        <div class="subpage" id="sp-ai-models">
+          <div class="card">
+            <div class="card-title">Upload Model</div>
+            <div class="col">
+              <div>
+                <label class="field-label">Model File (.xml SVM or .onnx)</label>
+                <input type="file" id="model-file" accept=".xml,.onnx" style="padding:6px"/>
+              </div>
+              <button class="btn btn-accent" onclick="uploadModel()">⬆ Upload</button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">Saved Models</div>
+            <div id="models-list">
+              <div class="empty-state"><div class="empty-icon">📦</div>No models</div>
+            </div>
+            <div style="margin-top:10px"><button class="btn btn-ghost btn-sm" onclick="loadModels()">🔄 Refresh</button></div>
+          </div>
+        </div>
+      </div><!-- /page-ai -->
+
+      <!-- ── SETTINGS ─────────────────────────────────────────────── -->
+      <div class="page" id="page-settings">
+
+        <!-- General -->
+        <div class="subpage" id="sp-settings-general">
+          <div class="card">
+            <div class="card-title">Application Settings</div>
+            <div class="col">
+              <div><label class="field-label">Default Stream Key</label><input id="cfg-stream-key" type="password" placeholder="stream-key"/></div>
+              <div><label class="field-label">Default Stream URL</label><input id="cfg-stream-url" placeholder="rtmp://"/></div>
+              <button class="btn btn-accent" onclick="saveSettings()">💾 Save</button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">System</div>
+            <div style="font-size:0.85rem;color:var(--text2);line-height:2">
+              Version: <strong>SportsCaster Pro v2.0</strong><br>
+              API: <a href="http://localhost:8000/docs" target="_blank" style="color:var(--accent)">localhost:8000/docs</a><br>
+              Overlay: <a href="/overlay/index.html" target="_blank" style="color:var(--accent)">Open in new tab</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Hotspot -->
+        <div class="subpage" id="sp-settings-hotspot">
+          <div class="card">
+            <div class="card-title">WiFi Hotspot (Raspberry Pi)</div>
+            <div class="col">
+              <div><label class="field-label">SSID</label><input id="cfg-ssid" value="SportsCaster"/></div>
+              <div><label class="field-label">Password</label><input id="cfg-pass" value="broadcast1"/></div>
+              <button class="btn btn-accent" onclick="saveSettings()">💾 Save Hotspot Config</button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">Access Points</div>
+            <div style="font-size:0.85rem;color:var(--text2);line-height:2">
+              Frontend: <strong>http://192.168.4.1:3000</strong><br>
+              Backend:  <strong>http://192.168.4.1:8000</strong><br>
+              Overlay:  <strong>http://192.168.4.1:8000/overlay/</strong>
+            </div>
+          </div>
+        </div>
+      </div><!-- /page-settings -->
+
+    </div><!-- /content -->
+  </div><!-- /layout -->
+</div><!-- /app -->
+
+<!-- Event Popup -->
+<div id="event-popup"></div>
+
+<script src="app.js"></script>
+</body>
+</html>

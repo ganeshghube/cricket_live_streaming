@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hockey Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--y:#f0b429;--bg:#080810;--card:#0e0e1a;--brd:#1e1e2e;--brd2:#252535;--green:#06d6a0;--red:#e63946;--text:#c8c8d8;--muted:#555566;}
+*{box-sizing:border-box;}
+body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);margin:0;}
+.topbar{background:linear-gradient(90deg,#0c0c18,#111120);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid var(--y);position:sticky;top:0;z-index:99;}
+.topbar h1{margin:0;font-family:'Barlow Condensed',sans-serif;font-size:16px;color:var(--y);letter-spacing:3px;text-transform:uppercase;}
+.live-dot{width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;margin-right:8px;box-shadow:0 0 8px var(--green);animation:ldot 1.5s infinite;}
+@keyframes ldot{0%,100%{opacity:1}50%{opacity:.3}}
+.infobar{background:#0a0a16;padding:7px 16px;display:flex;gap:16px;flex-wrap:wrap;align-items:center;font-family:'Barlow Condensed',sans-serif;font-size:12px;color:var(--muted);border-bottom:1px solid var(--brd);}
+.infobar b{color:var(--y);}
+.body{padding:14px;display:grid;gap:14px;max-width:980px;margin:auto;}
+.card{background:var(--card);padding:16px;border-radius:8px;border:1px solid var(--brd);}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.g4{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;}
+@media(min-width:540px){.g4{grid-template-columns:repeat(4,1fr);}}
+h4{margin:0 0 12px;font-family:'Barlow Condensed',sans-serif;color:var(--y);text-transform:uppercase;font-size:11px;font-weight:800;letter-spacing:3px;border-bottom:1px solid var(--brd2);padding-bottom:8px;}
+label{font-family:'Barlow Condensed',sans-serif;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;display:block;margin-top:8px;margin-bottom:3px;}
+input{width:100%;padding:9px 12px;background:#0a0a18;border:1px solid var(--brd2);color:#ddd;border-radius:5px;font-size:13px;}
+button{padding:13px 8px;border:none;border-radius:5px;font-family:'Barlow Condensed',sans-serif;font-weight:700;cursor:pointer;transition:all .12s;font-size:14px;width:100%;}
+button:active{opacity:.65;transform:scale(.95);}
+.b-goal{background:#052212;color:#7fff7f;border:1px solid #0a4a2a;font-size:16px;}
+.b-pc{background:#280820;color:#d0a0ff;border:1px solid #501040;}
+.b-yellow{background:#2a1e00;color:#ffd680;border:1px solid #5a3e00;}
+.b-red{background:#200000;color:#ff8080;border:1px solid #500000;}
+.b-gold{background:linear-gradient(135deg,#3a2800,#2a1e00);color:var(--y);border:1px solid #5a3c00;}
+.b-rst{background:#0a0008;color:#ff4d4d;border:1px solid #400010;}
+.score-display{text-align:center;padding:20px;background:#0c0c20;border-radius:8px;border:1px solid var(--brd);margin-bottom:14px;}
+.score-main{display:flex;align-items:center;justify-content:center;gap:20px;}
+.team-score{text-align:center;}
+.team-name-d{font-family:'Barlow Condensed',sans-serif;font-size:13px;color:#aaa;text-transform:uppercase;letter-spacing:2px;}
+.score-num{font-family:'Barlow Condensed',sans-serif;font-size:60px;font-weight:900;color:var(--y);line-height:1;}
+.score-sep{font-family:'Barlow Condensed',sans-serif;font-size:28px;color:#333;}
+.api-dot{width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:6px;}
+.api-dot.ok{background:var(--green);box-shadow:0 0 6px var(--green);}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <h1><span class="live-dot"></span>Hockey Admin</h1>
+  <div style="display:flex;align-items:center;gap:10px">
+    <span style="font-size:11px;color:var(--muted);font-family:'Barlow Condensed',sans-serif"><span class="api-dot" id="apiDot"></span>API</span>
+    <a href="/" style="font-family:'Barlow Condensed',sans-serif;font-size:11px;color:var(--muted);text-decoration:none">← Back</a>
+  </div>
+</div>
+<div class="infobar">
+  <span>QTR <b id="iQtr">1</b></span>
+  <span><b id="iTeamA">Team A</b> <b id="iSA" style="color:var(--green)">0</b> — <b id="iSB" style="color:var(--green)">0</b> <b id="iTeamB">Team B</b></span>
+  <span>PC A:<b id="iPCA">0</b> B:<b id="iPCB">0</b></span>
+</div>
+<div class="body">
+  <div class="card" id="setupCard">
+    <h4>🏑 Match Setup</h4>
+    <div class="g2">
+      <div><label>Team A</label><input id="teamA" value="Team A"/></div>
+      <div><label>Team B</label><input id="teamB" value="Team B"/></div>
+    </div>
+    <button class="b-gold" style="margin-top:12px" onclick="initMatch()">⚡ INITIALIZE MATCH</button>
+  </div>
+
+  <div class="score-display" id="scoreDisplay" style="display:none">
+    <div class="score-main">
+      <div class="team-score"><div class="team-name-d" id="dTA">TEAM A</div><div class="score-num" id="dSA">0</div></div>
+      <div class="score-sep">—</div>
+      <div class="team-score"><div class="score-num" id="dSB">0</div><div class="team-name-d" id="dTB">TEAM B</div></div>
+    </div>
+    <div style="font-family:'Barlow Condensed',sans-serif;font-size:12px;color:var(--muted);margin-top:6px" id="dMeta">Quarter 1</div>
+  </div>
+
+  <div class="card" id="scoringCard" style="display:none">
+    <h4>🥅 Goals</h4>
+    <div class="g2" style="margin-bottom:10px">
+      <button class="b-goal" onclick="goal('a')">🥅 GOAL<br><span id="btn-ta" style="font-size:12px">A</span></button>
+      <button class="b-goal" onclick="goal('b')">🥅 GOAL<br><span id="btn-tb" style="font-size:12px">B</span></button>
+    </div>
+    <h4>🏒 Penalty Corner</h4>
+    <div class="g2">
+      <button class="b-pc" onclick="pc('a')">PC <span id="btn-pc-a">A</span></button>
+      <button class="b-pc" onclick="pc('b')">PC <span id="btn-pc-b">B</span></button>
+    </div>
+  </div>
+
+  <div class="card" id="cardsCard" style="display:none">
+    <h4>🟡 Cards</h4>
+    <div class="g4">
+      <button class="b-yellow" onclick="cardEvt('a','yellow')">🟡 A</button>
+      <button class="b-red" onclick="cardEvt('a','red')">🟥 A</button>
+      <button class="b-yellow" onclick="cardEvt('b','yellow')">🟡 B</button>
+      <button class="b-red" onclick="cardEvt('b','red')">🟥 B</button>
+    </div>
+  </div>
+
+  <div class="card" id="ctrlCard" style="display:none">
+    <h4>⏱ Controls</h4>
+    <div class="g2">
+      <button style="background:#100828;color:#c4a0ff;border:1px solid #281050" onclick="nextQtr()">Next Quarter ▶</button>
+      <button class="b-rst" onclick="fullReset()">⚠ RESET</button>
+    </div>
+  </div>
+</div>
+<script>
+'use strict';
+const API = `http://${location.hostname}:8000/api`;
+let d = null;
+const $ = id => document.getElementById(id);
+
+async function apiPost(p,b){const r=await fetch(`${API}${p}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});return r.json();}
+async function apiGet(p){const r=await fetch(`${API}${p}`);return r.json();}
+function setDot(ok){$('apiDot').className='api-dot '+(ok?'ok':'');}
+
+async function save(state) {
+  try { await apiPost('/hockey/state',state); setDot(true); d=state; render(); } catch(e){setDot(false);}
+}
+
+async function initMatch() {
+  const tA=$('teamA').value||'Team A', tB=$('teamB').value||'Team B';
+  await save({sport:'hockey',team_a:tA,team_b:tB,score:{a:0,b:0},quarter:1,penalty_corners:{a:0,b:0},cards:{a:{green:0,yellow:0,red:0},b:{green:0,yellow:0,red:0}},events:[]});
+  $('setupCard').style.display='none';
+  ['scoreDisplay','scoringCard','cardsCard','ctrlCard'].forEach(id=>$(id).style.display='');
+}
+
+async function goal(t){if(!d)return;const s=JSON.parse(JSON.stringify(d));s.score[t]++;await save(s);}
+async function pc(t){if(!d)return;const s=JSON.parse(JSON.stringify(d));s.penalty_corners[t]++;await save(s);}
+async function cardEvt(t,type){if(!d)return;const s=JSON.parse(JSON.stringify(d));s.cards[t][type]++;await save(s);}
+async function nextQtr(){if(!d)return;const s=JSON.parse(JSON.stringify(d));s.quarter=Math.min(s.quarter+1,4);await save(s);}
+async function fullReset(){if(!confirm('Reset?'))return;await apiPost('/hockey/state',{});location.reload();}
+
+function render(){
+  if(!d||!d.team_a)return;
+  $('dTA').textContent=d.team_a; $('dTB').textContent=d.team_b;
+  $('dSA').textContent=d.score?.a??0; $('dSB').textContent=d.score?.b??0;
+  $('dMeta').textContent=`Quarter ${d.quarter||1}`;
+  $('iTeamA').textContent=d.team_a; $('iTeamB').textContent=d.team_b;
+  $('iSA').textContent=d.score?.a??0; $('iSB').textContent=d.score?.b??0;
+  $('iQtr').textContent=d.quarter||1;
+  $('iPCA').textContent=d.penalty_corners?.a??0; $('iPCB').textContent=d.penalty_corners?.b??0;
+  $('btn-ta').textContent=d.team_a; $('btn-tb').textContent=d.team_b;
+  $('btn-pc-a').textContent=d.team_a; $('btn-pc-b').textContent=d.team_b;
+}
+
+async function poll(){
+  try{const data=await apiGet('/hockey/state');setDot(true);if(data&&data.team_a){d=data;render();$('setupCard').style.display='none';['scoreDisplay','scoringCard','cardsCard','ctrlCard'].forEach(id=>$(id).style.display='');}}catch(e){setDot(false);}
+}
+setInterval(poll,500); poll();
+</script>
+</body>
+</html>

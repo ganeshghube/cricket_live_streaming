@@ -1,0 +1,7 @@
+{
+  "cricket":    {"overs": 20, "players": 11},
+  "football":   {"halves": 2, "duration_min": 45},
+  "hockey":     {"quarters": 4, "duration_min": 15},
+  "volleyball": {"sets_to_win": 3, "points_per_set": 25},
+  "custom":     {}
+}

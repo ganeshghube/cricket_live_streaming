@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Custom Sport Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--y:#f0b429;--bg:#080810;--card:#0e0e1a;--brd:#1e1e2e;--brd2:#252535;--green:#06d6a0;--text:#c8c8d8;--muted:#555566;}
+*{box-sizing:border-box;}
+body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);margin:0;}
+.topbar{background:linear-gradient(90deg,#0c0c18,#111120);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid var(--y);position:sticky;top:0;z-index:99;}
+.topbar h1{margin:0;font-family:'Barlow Condensed',sans-serif;font-size:16px;color:var(--y);letter-spacing:3px;text-transform:uppercase;}
+.live-dot{width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;margin-right:8px;animation:ldot 1.5s infinite;}
+@keyframes ldot{0%,100%{opacity:1}50%{opacity:.3}}
+.infobar{background:#0a0a16;padding:7px 16px;display:flex;gap:16px;font-family:'Barlow Condensed',sans-serif;font-size:12px;color:var(--muted);border-bottom:1px solid var(--brd);}
+.infobar b{color:var(--y);}
+.body{padding:14px;display:grid;gap:14px;max-width:980px;margin:auto;}
+.card{background:var(--card);padding:16px;border-radius:8px;border:1px solid var(--brd);}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+h4{margin:0 0 12px;font-family:'Barlow Condensed',sans-serif;color:var(--y);text-transform:uppercase;font-size:11px;font-weight:800;letter-spacing:3px;border-bottom:1px solid var(--brd2);padding-bottom:8px;}
+label{font-family:'Barlow Condensed',sans-serif;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;display:block;margin-top:8px;margin-bottom:3px;}
+input{width:100%;padding:9px 12px;background:#0a0a18;border:1px solid var(--brd2);color:#ddd;border-radius:5px;font-size:13px;}
+button{padding:13px 8px;border:none;border-radius:5px;font-family:'Barlow Condensed',sans-serif;font-weight:700;cursor:pointer;transition:all .12s;font-size:14px;width:100%;}
+button:active{opacity:.65;transform:scale(.95);}
+.b-pt{background:#051428;color:#7ec8ff;border:1px solid #0a2a50;font-size:22px;}
+.b-gold{background:linear-gradient(135deg,#3a2800,#2a1e00);color:var(--y);border:1px solid #5a3c00;}
+.b-rst{background:#0a0008;color:#ff4d4d;border:1px solid #400010;}
+.score-num{font-family:'Barlow Condensed',sans-serif;font-size:72px;font-weight:900;color:var(--y);}
+.api-dot{width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:6px;}
+.api-dot.ok{background:var(--green);}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <h1><span class="live-dot"></span>Custom Admin</h1>
+  <div style="display:flex;align-items:center;gap:10px">
+    <span style="font-size:11px;color:var(--muted);font-family:'Barlow Condensed',sans-serif"><span class="api-dot" id="apiDot"></span>API</span>
+    <a href="/" style="font-family:'Barlow Condensed',sans-serif;font-size:11px;color:var(--muted);text-decoration:none">← Back</a>
+  </div>
+</div>
+<div class="infobar">
+  <span><b id="iTA">A</b> <b id="iSA">0</b> — <b id="iSB">0</b> <b id="iTB">B</b></span>
+</div>
+<div class="body">
+  <div class="card" id="setupCard">
+    <h4>🎯 Match Setup</h4>
+    <div class="g2">
+      <div><label>Team A Name</label><input id="teamA" value="Team A"/></div>
+      <div><label>Team B Name</label><input id="teamB" value="Team B"/></div>
+    </div>
+    <div style="margin-top:10px"><label>Sport / Event Name</label><input id="sportName" value="Custom"/></div>
+    <button class="b-gold" style="margin-top:12px" onclick="initMatch()">⚡ INITIALIZE</button>
+  </div>
+  <div id="scoringCard" style="display:none">
+    <div style="text-align:center;padding:20px;background:#0c0c20;border-radius:8px;border:1px solid var(--brd);margin-bottom:14px">
+      <div style="display:flex;align-items:center;justify-content:center;gap:24px">
+        <div style="text-align:center">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:13px;color:#aaa;text-transform:uppercase;letter-spacing:2px" id="dTA">A</div>
+          <div class="score-num" id="dSA">0</div>
+        </div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:28px;color:#333">—</div>
+        <div style="text-align:center">
+          <div class="score-num" id="dSB">0</div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:13px;color:#aaa;text-transform:uppercase;letter-spacing:2px" id="dTB">B</div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <h4>Points</h4>
+      <div class="g2">
+        <button class="b-pt" onclick="point('a')">+1 <span id="btn-ta">A</span></button>
+        <button class="b-pt" onclick="point('b')">+1 <span id="btn-tb">B</span></button>
+      </div>
+    </div>
+    <div class="card" style="margin-top:14px">
+      <button class="b-rst" onclick="fullReset()">⚠ RESET</button>
+    </div>
+  </div>
+</div>
+<script>
+'use strict';
+const API=`http://${location.hostname}:8000/api`;let d=null;const $=id=>document.getElementById(id);
+async function post(p,b){const r=await fetch(`${API}${p}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});return r.json();}
+async function get(p){const r=await fetch(`${API}${p}`);return r.json();}
+function dot(ok){$('apiDot').className='api-dot '+(ok?'ok':'');}
+async function save(s){try{await post('/custom/state',s);dot(true);d=s;render();}catch(e){dot(false);}}
+async function initMatch(){
+  const tA=$('teamA').value||'A',tB=$('teamB').value||'B',sp=$('sportName').value||'Custom';
+  await save({sport:'custom',sport_name:sp,team_a:tA,team_b:tB,score:{a:0,b:0}});
+  $('setupCard').style.display='none';$('scoringCard').style.display='block';
+}
+async function point(t){if(!d)return;const s=JSON.parse(JSON.stringify(d));s.score[t]++;await save(s);}
+async function fullReset(){if(!confirm('Reset?'))return;await post('/custom/state',{});location.reload();}
+function render(){
+  if(!d||!d.team_a)return;
+  $('dTA').textContent=d.team_a;$('dTB').textContent=d.team_b;
+  $('dSA').textContent=d.score?.a??0;$('dSB').textContent=d.score?.b??0;
+  $('iTA').textContent=d.team_a;$('iTB').textContent=d.team_b;
+  $('iSA').textContent=d.score?.a??0;$('iSB').textContent=d.score?.b??0;
+  $('btn-ta').textContent=d.team_a;$('btn-tb').textContent=d.team_b;
+}
+async function poll(){try{const data=await get('/custom/state');dot(true);if(data&&data.team_a){d=data;render();$('setupCard').style.display='none';$('scoringCard').style.display='block';}}catch(e){dot(false);}}
+setInterval(poll,500);poll();
+</script>
+</body>
+</html>

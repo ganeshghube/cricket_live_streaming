@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Football Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--y:#f0b429;--bg:#080810;--card:#0e0e1a;--brd:#1e1e2e;--brd2:#252535;--green:#06d6a0;--red:#e63946;--text:#c8c8d8;--muted:#555566;}
+*{box-sizing:border-box;}
+body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);margin:0;min-height:100vh;}
+.topbar{background:linear-gradient(90deg,#0c0c18,#111120);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid var(--y);position:sticky;top:0;z-index:99;}
+.topbar h1{margin:0;font-family:'Barlow Condensed',sans-serif;font-size:16px;color:var(--y);letter-spacing:3px;text-transform:uppercase;}
+.live-dot{width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;margin-right:8px;box-shadow:0 0 8px var(--green);animation:ldot 1.5s infinite;}
+@keyframes ldot{0%,100%{opacity:1}50%{opacity:.3}}
+.infobar{background:#0a0a16;padding:7px 16px;display:flex;gap:16px;flex-wrap:wrap;align-items:center;font-family:'Barlow Condensed',sans-serif;font-size:12px;color:var(--muted);border-bottom:1px solid var(--brd);}
+.infobar b{color:var(--y);}
+.body{padding:14px;display:grid;gap:14px;max-width:980px;margin:auto;}
+.card{background:var(--card);padding:16px;border-radius:8px;border:1px solid var(--brd);}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.g4{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;}
+@media(min-width:540px){.g4{grid-template-columns:repeat(4,1fr);}}
+h4{margin:0 0 12px;font-family:'Barlow Condensed',sans-serif;color:var(--y);text-transform:uppercase;font-size:11px;font-weight:800;letter-spacing:3px;border-bottom:1px solid var(--brd2);padding-bottom:8px;}
+label{font-family:'Barlow Condensed',sans-serif;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;display:block;margin-top:8px;margin-bottom:3px;}
+input,select{width:100%;padding:9px 12px;background:#0a0a18;border:1px solid var(--brd2);color:#ddd;border-radius:5px;font-size:13px;font-family:'Barlow',sans-serif;}
+button{padding:13px 8px;border:none;border-radius:5px;font-family:'Barlow Condensed',sans-serif;font-weight:700;cursor:pointer;transition:all .12s;font-size:14px;letter-spacing:.5px;width:100%;}
+button:active{opacity:.65;transform:scale(.95);}
+.b-goal{background:#052212;color:#7fff7f;border:1px solid #0a4a2a;font-size:18px;}
+.b-yellow{background:#2a1e00;color:#ffd680;border:1px solid #5a3e00;}
+.b-red{background:#200000;color:#ff8080;border:1px solid #500000;}
+.b-gold{background:linear-gradient(135deg,#3a2800,#2a1e00);color:var(--y);border:1px solid #5a3c00;}
+.b-rst{background:#0a0008;color:#ff4d4d;border:1px solid #400010;}
+.score-display{text-align:center;padding:20px;background:linear-gradient(135deg,#0c0c20,#111128);border-radius:8px;border:1px solid var(--brd);margin-bottom:14px;}
+.score-main{display:flex;align-items:center;justify-content:center;gap:20px;}
+.team-score{text-align:center;}
+.team-name-disp{font-family:'Barlow Condensed',sans-serif;font-size:14px;color:#aaa;text-transform:uppercase;letter-spacing:2px;}
+.score-num{font-family:'Barlow Condensed',sans-serif;font-size:64px;font-weight:900;color:var(--y);line-height:1;}
+.score-sep{font-family:'Barlow Condensed',sans-serif;font-size:32px;color:#333;}
+.score-meta-bar{font-family:'Barlow Condensed',sans-serif;font-size:12px;color:var(--muted);margin-top:8px;}
+.api-dot{width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:6px;}
+.api-dot.ok{background:var(--green);box-shadow:0 0 6px var(--green);}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <h1><span class="live-dot"></span>Football Admin</h1>
+  <div style="display:flex;align-items:center;gap:10px">
+    <span style="font-size:11px;color:var(--muted);font-family:'Barlow Condensed',sans-serif"><span class="api-dot" id="apiDot"></span>API</span>
+    <a href="/" style="font-family:'Barlow Condensed',sans-serif;font-size:11px;color:var(--muted);text-decoration:none">← Back</a>
+  </div>
+</div>
+<div class="infobar">
+  <span>HALF <b id="iHalf">1ST</b></span>
+  <span><b id="iTeamA">Home</b> <b id="iScoreA" style="color:var(--green)">0</b> — <b id="iScoreB" style="color:var(--green)">0</b> <b id="iTeamB">Away</b></span>
+  <span>CARDS A: Y<b id="iYA">0</b> R<b id="iRA">0</b> · B: Y<b id="iYB">0</b> R<b id="iRB">0</b></span>
+</div>
+<div class="body">
+  <!-- Setup -->
+  <div class="card" id="setupCard">
+    <h4>⚽ Match Setup</h4>
+    <div class="g2">
+      <div><label>Home Team</label><input id="teamA" value="Home Team"/></div>
+      <div><label>Away Team</label><input id="teamB" value="Away Team"/></div>
+    </div>
+    <button class="b-gold" style="margin-top:12px" onclick="initMatch()">⚡ INITIALIZE MATCH</button>
+  </div>
+
+  <!-- Score display -->
+  <div class="score-display" id="scoreDisplay" style="display:none">
+    <div class="score-main">
+      <div class="team-score">
+        <div class="team-name-disp" id="dispTeamA">HOME</div>
+        <div class="score-num" id="dispScoreA">0</div>
+      </div>
+      <div class="score-sep">—</div>
+      <div class="team-score">
+        <div class="score-num" id="dispScoreB">0</div>
+        <div class="team-name-disp" id="dispTeamB">AWAY</div>
+      </div>
+    </div>
+    <div class="score-meta-bar" id="dispMeta">1st Half</div>
+  </div>
+
+  <!-- Goals -->
+  <div class="card" id="scoringCard" style="display:none">
+    <h4>⚽ Goals</h4>
+    <div class="g2">
+      <button class="b-goal" onclick="goal('a')">⚽ GOAL<br><span id="btn-team-a" style="font-size:12px">HOME</span></button>
+      <button class="b-goal" onclick="goal('b')">⚽ GOAL<br><span id="btn-team-b" style="font-size:12px">AWAY</span></button>
+    </div>
+  </div>
+
+  <!-- Cards -->
+  <div class="card" id="cardsCard" style="display:none">
+    <h4>🟡 Cards</h4>
+    <div class="g4">
+      <button class="b-yellow" onclick="card('a','yellow')">🟡 Yellow<br>HOME</button>
+      <button class="b-red" onclick="card('a','red')">🟥 Red<br>HOME</button>
+      <button class="b-yellow" onclick="card('b','yellow')">🟡 Yellow<br>AWAY</button>
+      <button class="b-red" onclick="card('b','red')">🟥 Red<br>AWAY</button>
+    </div>
+  </div>
+
+  <!-- Half / Reset -->
+  <div class="card" id="ctrlCard" style="display:none">
+    <h4>⏱ Controls</h4>
+    <div class="g2">
+      <button style="background:#100828;color:#c4a0ff;border:1px solid #281050" onclick="halfTime()">🔄 HALF TIME</button>
+      <button class="b-rst" onclick="fullReset()">⚠ RESET</button>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+const API = `http://${location.hostname}:8000/api`;
+let d = null;
+
+async function apiPost(path, body) {
+  const r = await fetch(`${API}${path}`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  return r.json();
+}
+async function apiGet(path) {
+  const r = await fetch(`${API}${path}`);
+  return r.json();
+}
+
+function setApiDot(ok) { document.getElementById('apiDot').className = 'api-dot ' + (ok?'ok':''); }
+
+async function saveState(state) {
+  try {
+    await apiPost('/football/state', state);
+    setApiDot(true);
+    d = state;
+    renderUI();
+  } catch(e) { setApiDot(false); }
+}
+
+async function initMatch() {
+  const tA = document.getElementById('teamA').value || 'Home Team';
+  const tB = document.getElementById('teamB').value || 'Away Team';
+  const state = {
+    sport:'football', team_a:tA, team_b:tB,
+    score:{a:0,b:0}, half:1,
+    cards:{a:{yellow:0,red:0},b:{yellow:0,red:0}},
+    events:[]
+  };
+  await saveState(state);
+  document.getElementById('setupCard').style.display='none';
+  ['scoreDisplay','scoringCard','cardsCard','ctrlCard'].forEach(id => document.getElementById(id).style.display='');
+  document.getElementById('btn-team-a').textContent=tA;
+  document.getElementById('btn-team-b').textContent=tB;
+}
+
+async function goal(team) {
+  if (!d) return;
+  const s = JSON.parse(JSON.stringify(d));
+  s.score[team]++;
+  s.events.push({type:'goal',team,time:new Date().toISOString()});
+  await saveState(s);
+}
+
+async function card(team, type) {
+  if (!d) return;
+  const s = JSON.parse(JSON.stringify(d));
+  s.cards[team][type]++;
+  s.events.push({type:'card',cardType:type,team,time:new Date().toISOString()});
+  await saveState(s);
+}
+
+async function halfTime() {
+  if (!d) return;
+  const s = JSON.parse(JSON.stringify(d));
+  s.half = 2;
+  await saveState(s);
+}
+
+async function fullReset() {
+  if (!confirm('Reset match?')) return;
+  await apiPost('/football/state', {});
+  d = null;
+  location.reload();
+}
+
+function renderUI() {
+  if (!d || !d.team_a) return;
+  document.getElementById('dispTeamA').textContent = d.team_a;
+  document.getElementById('dispTeamB').textContent = d.team_b;
+  document.getElementById('dispScoreA').textContent = d.score?.a ?? 0;
+  document.getElementById('dispScoreB').textContent = d.score?.b ?? 0;
+  document.getElementById('dispMeta').textContent = `${d.half===2?'2nd':'1st'} Half`;
+  document.getElementById('iTeamA').textContent = d.team_a;
+  document.getElementById('iTeamB').textContent = d.team_b;
+  document.getElementById('iScoreA').textContent = d.score?.a ?? 0;
+  document.getElementById('iScoreB').textContent = d.score?.b ?? 0;
+  document.getElementById('iHalf').textContent = d.half===2?'2ND':'1ST';
+  document.getElementById('iYA').textContent = d.cards?.a?.yellow ?? 0;
+  document.getElementById('iRA').textContent = d.cards?.a?.red ?? 0;
+  document.getElementById('iYB').textContent = d.cards?.b?.yellow ?? 0;
+  document.getElementById('iRB').textContent = d.cards?.b?.red ?? 0;
+}
+
+async function pollMatch() {
+  try {
+    const data = await apiGet('/football/state');
+    setApiDot(true);
+    if (data && data.team_a) {
+      d = data;
+      renderUI();
+      document.getElementById('setupCard').style.display='none';
+      ['scoreDisplay','scoringCard','cardsCard','ctrlCard'].forEach(id => document.getElementById(id).style.display='');
+    }
+  } catch(e) { setApiDot(false); }
+}
+
+setInterval(pollMatch, 500);
+pollMatch();
+</script>
+</body>
+</html>
