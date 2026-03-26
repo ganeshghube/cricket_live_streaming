@@ -1,10 +1,10 @@
-# SportsCaster Pro v2
+# SportsCaster Pro V1
 
 **Complete rebuild**: vertical sidebar + sub-tabs, camera source management, overlay sync, streaming/recording fix, replay fix, AI tracking.
 
 ---
 
-## What's Fixed in v2
+## What's Fixed in V1
 
 | Issue | Fix |
 |---|---|
