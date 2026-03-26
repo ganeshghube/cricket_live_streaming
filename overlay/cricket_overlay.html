@@ -486,20 +486,13 @@ function connectWS() {
   };
   ws.onclose = () => setTimeout(connectWS, 3000);
 }
-poll();
-setInterval(poll, 500);
-// WebSocket for instant updates
-(function(){
-  const ws = new WebSocket(`${location.protocol==='https:'?'wss':'ws'}://${location.hostname}:8000/ws`);
-  ws.onmessage = e => { try{ const m=JSON.parse(e.data); if(m.payload?.sport==='cricket') poll(); }catch(e){} };
-  ws.onclose = () => setTimeout(arguments.callee, 3000);
-})();
+
 // Start polling immediately then continue on interval
-//pollMatch();
-//pollUI();
-//setInterval(pollMatch, 500);   // Poll every 500ms for score updates
-//setInterval(pollUI,   2000);   // Poll every 2s for show/hide state
-//connectWS();                    // WebSocket as instant secondary path
+pollMatch();
+pollUI();
+setInterval(pollMatch, 500);   // Poll every 500ms for score updates
+setInterval(pollUI,   2000);   // Poll every 2s for show/hide state
+connectWS();                    // WebSocket as instant secondary path
 // No page reload needed — polling + WebSocket keeps score live
 </script>
 </body>

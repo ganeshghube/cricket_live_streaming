@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Cricket Admin</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -780,7 +781,6 @@ function toast(msg) {
   t.textContent = msg;
   document.body.appendChild(t);
   setTimeout(() => t.remove(), 3000);
-  setInterval(poll, 500);
 }
 
 async function init() {
@@ -788,12 +788,10 @@ async function init() {
   await loadUndoCount();
   await pollMatch();
   // Poll match state every 500ms — drives infobar + overlay sync
- // _polling = setInterval(pollMatch, 500);
+  _polling = setInterval(pollMatch, 500);
 }
 
 init();
-
-
 </script>
 </body>
 </html>

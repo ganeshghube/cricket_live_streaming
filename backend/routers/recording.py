@@ -2,7 +2,7 @@
 SportsCaster Pro - Recording Router v5
 Fixed: disk space monitoring, auto-stop when full, MP4 format, proper dshow/v4l2.
 """
-import logging, os, shutil, subprocess, time, threading
+import logging, os, re, shutil, subprocess, time, threading
 from pathlib import Path
 from typing import Optional
 from fastapi import APIRouter, HTTPException, Request
@@ -36,22 +36,34 @@ def _purge_oldest():
 
 
 def _resolve_cam(src: str, output: str) -> list:
-    """Build FFmpeg record command matching streaming router's camera handling."""
-    if src.startswith("http") or src.startswith("rtsp"):
+    """
+    Build FFmpeg record command.
+    Mirrors streaming.py _resolve_camera_input rules exactly:
+    - Windows dshow: NO -pixel_format, NO forced -video_size/-framerate
+    - HTTP: plain -i (no -rtsp_transport)
+    - RTSP: -rtsp_transport tcp
+    - Linux v4l2: -input_format mjpeg is valid
+    """
+    # RTSP
+    if src.startswith("rtsp") or src.startswith("rtsps"):
+        return ["ffmpeg", "-rtsp_transport", "tcp", "-i", src,
+                "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23",
+                "-c:a", "aac", "-movflags", "+faststart", "-y", output]
+    # HTTP (IP Webcam, MJPEG)
+    if src.startswith("http"):
         return ["ffmpeg", "-i", src,
                 "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23",
                 "-c:a", "aac", "-movflags", "+faststart", "-y", output]
+    # Windows DirectShow — no pixel_format, no forced resolution
     if os.name == "nt":
-        # Windows: resolve dshow device name
         try:
-            import re
-            r = subprocess.run(["ffmpeg","-list_devices","true","-f","dshow","-i","dummy"],
+            r = subprocess.run(["ffmpeg", "-list_devices", "true", "-f", "dshow", "-i", "dummy"],
                                capture_output=True, text=True, timeout=8)
             devices = re.findall(r'"([^"]+)"\s*\(video\)', r.stderr, re.IGNORECASE)
         except Exception:
             devices = []
         if src.isdigit() and devices:
-            dev = devices[min(int(src), len(devices)-1)]
+            dev = devices[min(int(src), len(devices) - 1)]
         elif src.startswith("video="):
             dev = src[6:]
         else:
@@ -59,7 +71,7 @@ def _resolve_cam(src: str, output: str) -> list:
         return ["ffmpeg", "-f", "dshow", "-i", f"video={dev}",
                 "-c:v", "libx264", "-preset", "ultrafast",
                 "-movflags", "+faststart", "-y", output]
-    # Linux/Pi v4l2
+    # Linux / Raspberry Pi v4l2
     dev = f"/dev/video{src}" if src.isdigit() else src
     return ["ffmpeg", "-f", "v4l2", "-input_format", "mjpeg",
             "-i", dev, "-c:v", "libx264", "-preset", "ultrafast",

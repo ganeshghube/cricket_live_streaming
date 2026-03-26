@@ -1,11 +1,13 @@
 """
-SportsCaster Pro - Streaming Router v9
+SportsCaster Pro - Streaming Router v11
 Fixes:
-- Multiple simultaneous streams (each has own process + key)
-- Integrated camera (index 0) vs USB camera proper detection
-- Video quality: higher bitrate defaults, better encoder params
-- Correct FFmpeg command for Windows dshow / Linux v4l2 / IP/RTSP
-- Audio always included so YouTube never rejects
+  - Windows dshow: removed invalid -pixel_format mjpeg option
+  - Windows dshow: -video_size and -framerate are now optional (not forced),
+    preventing "Invalid argument" on cameras that don't support them
+  - HTTP streams (mobile IP Webcam): no -rtsp_transport option
+  - RTSP streams: keep -rtsp_transport tcp
+  - Multi-stream support (different stream_id per camera)
+  - High quality defaults: 4000k bitrate, hw encoder detection
 """
 import asyncio, logging, os, re, subprocess, threading, time
 from pathlib import Path
@@ -18,21 +20,19 @@ from services.state import app_state
 router = APIRouter()
 logger = logging.getLogger("sportscaster.streaming")
 
-# ── Multiple stream support ───────────────────────────────────────────────
-# Key = stream_id (e.g. "main", "camera2"), value = process info
+# Active streams: stream_id → {proc, log_path, rtmp, camera, platform, started_at}
 _streams: Dict[str, dict] = {}
-_ffmpeg_log: Optional[Path] = None
 
 
 class StreamConfig(BaseModel):
-    stream_id:     str           = "main"        # unique id for this stream
+    stream_id:     str           = "main"
     platform:      str           = "youtube"
     stream_url:    Optional[str] = ""
     stream_key:    str           = ""
     resolution:    str           = "1280x720"
-    bitrate:       str           = "4000k"       # raised default for quality
+    bitrate:       str           = "4000k"
     fps:           int           = 30
-    camera_source: Optional[str] = None          # override active camera
+    camera_source: Optional[str] = None
 
 
 def _rtmp(cfg: StreamConfig) -> str:
@@ -44,7 +44,7 @@ def _rtmp(cfg: StreamConfig) -> str:
 
 
 def _get_dshow_devices() -> list:
-    """Windows: list all DirectShow video device names."""
+    """List Windows DirectShow video device names via ffmpeg."""
     try:
         r = subprocess.run(
             ["ffmpeg", "-list_devices", "true", "-f", "dshow", "-i", "dummy"],
@@ -55,12 +55,10 @@ def _get_dshow_devices() -> list:
         return []
 
 
-def _classify_device(name: str, idx: int) -> str:
-    """Classify a camera as integrated or external USB."""
+def _classify_device(name: str) -> str:
     n = name.lower()
-    integrated_keywords = ["integrated", "built-in", "builtin", "internal",
-                           "facetime", "isight", "front", "laptop", "webcam"]
-    if any(k in n for k in integrated_keywords):
+    if any(k in n for k in ["integrated", "built-in", "builtin", "internal",
+                              "facetime", "isight", "front", "laptop"]):
         return "integrated"
     return "usb"
 
@@ -68,23 +66,36 @@ def _classify_device(name: str, idx: int) -> str:
 def _resolve_camera_input(src: str, fps: int, res: str) -> list:
     """
     Build correct FFmpeg input arguments for any camera source.
-    - Windows: dshow with device name (not index)
-    - Linux/Pi: v4l2
-    - IP/RTSP: direct URL
+
+    Windows dshow rules (critical):
+      - DO NOT use -pixel_format (dshow ignores / rejects it)
+      - DO NOT force -video_size or -framerate unless camera supports it
+      - Use plain: -f dshow -i "video=Device Name"
+
+    Linux v4l2:
+      - CAN use -input_format mjpeg, -video_size, -framerate
+
+    HTTP (IP Webcam app, MJPEG):
+      - Plain: -i http://...   (NO -rtsp_transport)
+
+    RTSP:
+      - -rtsp_transport tcp -i rtsp://...
     """
     if not src or src.strip() == "":
         src = "0"
 
-    # IP camera / RTSP / HTTP stream
+    # ── RTSP streams ──────────────────────────────────────────────────────
     if src.startswith("rtsp") or src.startswith("rtsps"):
-        # RTSP needs transport protocol specified
         return ["-rtsp_transport", "tcp", "-i", src]
+
+    # ── HTTP streams (IP Webcam, MJPEG server) ────────────────────────────
     if src.startswith("http"):
-        # Plain HTTP streams (IP Webcam, MJPEG) — NO rtsp_transport option
+        # Plain HTTP — no transport option, just read the stream
         return ["-i", src]
 
-    # Windows DirectShow
+    # ── Windows DirectShow ────────────────────────────────────────────────
     if os.name == "nt":
+        # Resolve device name from index if numeric
         if src.isdigit():
             devices = _get_dshow_devices()
             if devices:
@@ -95,17 +106,17 @@ def _resolve_camera_input(src: str, fps: int, res: str) -> list:
         elif src.startswith("video="):
             device_name = src[6:]
         else:
-            device_name = src  # already a device name string
+            device_name = src  # already a device name
 
+        # IMPORTANT: Do NOT add -pixel_format, -video_size, or -framerate
+        # for dshow on Windows — they cause "Invalid argument" on most webcams.
+        # Let FFmpeg and dshow negotiate the best format automatically.
         return [
             "-f", "dshow",
-            "-video_size", res,
-            "-framerate", str(fps),
-            "-pixel_format", "mjpeg",       # reduces CPU, improves quality
             "-i", f"video={device_name}",
         ]
 
-    # Linux / Raspberry Pi — v4l2
+    # ── Linux / Raspberry Pi — v4l2 ───────────────────────────────────────
     if src.isdigit():
         dev = f"/dev/video{src}"
     elif src.startswith("/dev/"):
@@ -113,6 +124,7 @@ def _resolve_camera_input(src: str, fps: int, res: str) -> list:
     else:
         dev = f"/dev/video{src}"
 
+    # v4l2 supports -input_format mjpeg for efficiency
     return [
         "-f", "v4l2",
         "-input_format", "mjpeg",
@@ -123,30 +135,35 @@ def _resolve_camera_input(src: str, fps: int, res: str) -> list:
 
 
 def _best_encoder() -> list:
-    """Pick hardware encoder if available, else high-quality libx264."""
+    """
+    Detect hardware encoder, fall back to libx264.
+    Correct encoder flags per encoder type.
+    """
     try:
         out = subprocess.check_output(
             ["ffmpeg", "-encoders"], stderr=subprocess.STDOUT, text=True, timeout=8
         )
-        # Raspberry Pi hardware encoder
         if "h264_v4l2m2m" in out:
             logger.info("HW encoder: h264_v4l2m2m (Raspberry Pi)")
-            return ["-c:v", "h264_v4l2m2m", "-b:v", "4000k"]
-        # NVIDIA GPU
+            return ["-c:v", "h264_v4l2m2m"]
         if "h264_nvenc" in out:
             logger.info("HW encoder: h264_nvenc (NVIDIA)")
-            return ["-c:v", "h264_nvenc", "-preset", "p4",
-                    "-profile:v", "main", "-level", "4.1"]
-        # Intel QSV
+            return [
+                "-c:v", "h264_nvenc",
+                "-preset", "p4",
+                "-profile:v", "main",
+                "-level", "4.1",
+            ]
         if "h264_qsv" in out:
             logger.info("HW encoder: h264_qsv (Intel)")
             return ["-c:v", "h264_qsv", "-profile:v", "main"]
     except Exception:
         pass
-    # CPU libx264 — tuned for streaming quality
+
+    # CPU libx264 — best compatibility for all platforms
     return [
         "-c:v", "libx264",
-        "-preset", "veryfast",          # fast enough for real-time
+        "-preset", "veryfast",
         "-tune", "zerolatency",
         "-profile:v", "main",
         "-level", "4.1",
@@ -161,10 +178,9 @@ def _build_cmd(cfg: StreamConfig, rtmp_url: str) -> list:
     gop = fps * 2
 
     cam_args   = _resolve_camera_input(src, fps, res)
-    # Always add silent audio — required for YouTube/Facebook
     audio_args = ["-f", "lavfi", "-i", "anullsrc=r=44100:cl=stereo"]
 
-    # Scale + pad to exact target resolution, convert to yuv420p for compatibility
+    # Scale to target resolution, pad black bars if needed, force yuv420p
     vf = (
         f"scale={w}:{h}:force_original_aspect_ratio=decrease,"
         f"pad={w}:{h}:(ow-iw)/2:(oh-ih)/2:color=black,"
@@ -172,9 +188,8 @@ def _build_cmd(cfg: StreamConfig, rtmp_url: str) -> list:
     )
 
     enc = _best_encoder()
-    br  = cfg.bitrate
-    # Buffer = 2× bitrate for smooth streaming
-    buf = str(int(br.rstrip("kKmM")) * 2) + br[-1].lower()
+    br  = cfg.bitrate.lower().rstrip("k") + "k" if cfg.bitrate.lower().endswith("k") else cfg.bitrate
+    buf = str(int(cfg.bitrate.rstrip("kKmM")) * 2) + "k"
 
     return (
         ["ffmpeg", "-y"]
@@ -184,9 +199,9 @@ def _build_cmd(cfg: StreamConfig, rtmp_url: str) -> list:
         + enc
         + [
             "-b:v", br, "-maxrate", br, "-bufsize", buf,
-            "-g", str(gop), "-keyint_min", str(fps), "-sc_threshold", "0",
+            "-g",   str(gop), "-keyint_min", str(fps), "-sc_threshold", "0",
             "-c:a", "aac", "-b:a", "128k", "-ar", "44100", "-ac", "2",
-            "-shortest", "-f", "flv", rtmp_url
+            "-shortest", "-f", "flv", rtmp_url,
         ]
     )
 
@@ -203,12 +218,11 @@ def _log_stderr(proc, log_path: Path, stream_id: str):
 
 @router.post("/start")
 async def start_stream(cfg: StreamConfig, request: Request):
-    """Start a stream. Multiple streams can run simultaneously with different stream_id."""
+    """Start a stream. Multiple streams with different stream_id run simultaneously."""
     stream_id = cfg.stream_id.strip() or "main"
 
-    # Check if this stream_id is already running
     if stream_id in _streams and _streams[stream_id]["proc"].poll() is None:
-        raise HTTPException(409, f"Stream '{stream_id}' is already running. Use a different stream_id or stop it first.")
+        raise HTTPException(409, f"Stream '{stream_id}' already running. Stop it first or use a different ID.")
 
     if not cfg.stream_key.strip() and not (cfg.stream_url or "").strip():
         raise HTTPException(400, "stream_key is required")
@@ -220,7 +234,7 @@ async def start_stream(cfg: StreamConfig, request: Request):
     logs_dir.mkdir(parents=True, exist_ok=True)
     log_path = logs_dir / f"ffmpeg_{stream_id}.log"
 
-    logger.info(f"[{stream_id}] Stream → {rtmp_url}")
+    logger.info(f"[{stream_id}] → {rtmp_url}")
     logger.info(f"[{stream_id}] CMD: {' '.join(cmd)}")
 
     try:
@@ -233,24 +247,22 @@ async def start_stream(cfg: StreamConfig, request: Request):
     except Exception as e:
         raise HTTPException(500, str(e))
 
-    t = threading.Thread(target=_log_stderr, args=(proc, log_path, stream_id), daemon=True)
-    t.start()
+    threading.Thread(
+        target=_log_stderr, args=(proc, log_path, stream_id), daemon=True
+    ).start()
 
-    # Wait 2s to check if FFmpeg exited immediately (bad config)
     await asyncio.sleep(2)
     if proc.poll() is not None:
-        try:
-            last = log_path.read_text(errors="replace")[-1500:]
-        except Exception:
-            last = "(no log)"
+        try:    last = log_path.read_text(errors="replace")[-2000:]
+        except: last = "(no log)"
         raise HTTPException(500, f"FFmpeg exited immediately for stream '{stream_id}'.\n\nLog:\n{last}")
 
     _streams[stream_id] = {
-        "proc":      proc,
-        "log_path":  log_path,
-        "rtmp":      rtmp_url,
-        "camera":    cfg.camera_source or app_state.get("camera_source", "0"),
-        "platform":  cfg.platform,
+        "proc":       proc,
+        "log_path":   log_path,
+        "rtmp":       rtmp_url,
+        "camera":     cfg.camera_source or app_state.get("camera_source", ""),
+        "platform":   cfg.platform,
         "started_at": time.strftime("%H:%M:%S"),
     }
 
@@ -262,8 +274,9 @@ async def start_stream(cfg: StreamConfig, request: Request):
 
     try:
         await request.app.state.manager.send_event("STREAM_STATUS", {
-            "status": "live", "stream_id": stream_id, "pid": proc.pid,
-            "rtmp": rtmp_url, "active_streams": list(_streams.keys())
+            "status": "live", "stream_id": stream_id,
+            "pid": proc.pid, "rtmp": rtmp_url,
+            "active_streams": list(_streams.keys()),
         })
     except Exception:
         pass
@@ -271,21 +284,20 @@ async def start_stream(cfg: StreamConfig, request: Request):
     return {
         "status": "live", "stream_id": stream_id,
         "pid": proc.pid, "rtmp": rtmp_url,
-        "active_streams": list(_streams.keys())
+        "active_streams": list(_streams.keys()),
     }
 
 
 @router.post("/stop")
 async def stop_stream(stream_id: str = "main", request: Request = None):
-    """Stop a specific stream by stream_id."""
+    """Stop a specific stream by stream_id. Use stream_id=all to stop everything."""
     if stream_id == "all":
         stopped = []
         for sid, info in list(_streams.items()):
-            proc = info["proc"]
-            if proc.poll() is None:
-                proc.terminate()
-                try: proc.wait(timeout=5)
-                except subprocess.TimeoutExpired: proc.kill()
+            if info["proc"].poll() is None:
+                info["proc"].terminate()
+                try:    info["proc"].wait(timeout=5)
+                except: info["proc"].kill()
             del _streams[sid]
             stopped.append(sid)
         app_state["stream_status"] = "idle"
@@ -294,17 +306,17 @@ async def stop_stream(stream_id: str = "main", request: Request = None):
             if request:
                 await request.app.state.manager.send_event("STREAM_STATUS",
                     {"status": "idle", "stopped": stopped})
-        except Exception: pass
+        except Exception:
+            pass
         return {"status": "stopped", "stopped": stopped}
 
     if stream_id not in _streams:
         return {"status": "not_running", "stream_id": stream_id}
 
-    info = _streams[stream_id]
-    proc = info["proc"]
+    proc = _streams[stream_id]["proc"]
     if proc.poll() is None:
         proc.terminate()
-        try: proc.wait(timeout=6)
+        try:    proc.wait(timeout=6)
         except subprocess.TimeoutExpired: proc.kill()
 
     del _streams[stream_id]
@@ -318,21 +330,20 @@ async def stop_stream(stream_id: str = "main", request: Request = None):
             await request.app.state.manager.send_event("STREAM_STATUS", {
                 "status": "idle" if not _streams else "live",
                 "stream_id": stream_id,
-                "active_streams": list(_streams.keys())
+                "active_streams": list(_streams.keys()),
             })
-    except Exception: pass
+    except Exception:
+        pass
 
     return {
         "status": "stopped", "stream_id": stream_id,
-        "active_streams": list(_streams.keys())
+        "active_streams": list(_streams.keys()),
     }
 
 
 @router.get("/status")
 async def stream_status():
-    """Return status of all active streams."""
-    active = {}
-    dead   = []
+    active, dead = {}, []
     for sid, info in _streams.items():
         if info["proc"].poll() is None:
             active[sid] = {
@@ -345,13 +356,10 @@ async def stream_status():
             }
         else:
             dead.append(sid)
-
     for sid in dead:
         del _streams[sid]
-
     running = len(active) > 0
     app_state["stream_status"] = "live" if running else "idle"
-
     return {
         "running":        running,
         "status":         "live" if running else "idle",
@@ -362,64 +370,57 @@ async def stream_status():
 
 @router.get("/log")
 async def get_log(stream_id: str = "main"):
-    """Get last 100 lines of FFmpeg log for a stream."""
     log_path = Path("../config") / f"ffmpeg_{stream_id}.log"
     if log_path.exists():
         lines = log_path.read_text(errors="replace").splitlines()
-        return {"lines": lines[-100:], "stream_id": stream_id, "path": str(log_path)}
+        return {"lines": lines[-100:], "stream_id": stream_id}
     return {"lines": ["No log yet."], "stream_id": stream_id}
 
 
 @router.get("/list-devices")
 async def list_devices():
-    """List all cameras with type classification (integrated vs USB vs IP)."""
-    result = {"platform": "windows" if os.name == "nt" else "linux",
-              "integrated": [], "usb": [], "all": []}
-
+    """List all cameras with type: integrated, usb, all."""
+    result = {
+        "platform":   "windows" if os.name == "nt" else "linux",
+        "integrated": [], "usb": [], "all": []
+    }
     if os.name == "nt":
         devices = _get_dshow_devices()
         for i, name in enumerate(devices):
-            cam_type = _classify_device(name, i)
-            cam = {"index": i, "name": name, "url": str(i), "type": cam_type}
-            result[cam_type if cam_type in result else "usb"].append(cam)
+            t   = _classify_device(name)
+            cam = {"index": i, "name": name, "url": str(i), "type": t}
+            result[t].append(cam)
             result["all"].append(cam)
         if not devices:
             cam = {"index": 0, "name": "Default Camera", "url": "0", "type": "usb"}
-            result["usb"].append(cam)
-            result["all"].append(cam)
+            result["usb"].append(cam); result["all"].append(cam)
     else:
         import glob
-        devs = sorted(glob.glob("/dev/video*"))
-        for dev in devs:
-            idx = dev.replace("/dev/video", "")
+        for dev in sorted(glob.glob("/dev/video*")):
+            idx  = dev.replace("/dev/video", "")
             name = f"Camera {idx}"
-            cam_type = "integrated" if idx == "0" else "usb"
-            # Try to get real name
+            t    = "integrated" if idx == "0" else "usb"
             try:
                 r = subprocess.run(["v4l2-ctl", "--device", dev, "--info"],
                                    capture_output=True, text=True, timeout=3)
                 for line in r.stdout.splitlines():
                     if "Card type" in line:
-                        name = line.split(":")[-1].strip()
-                        break
-                cam_type = _classify_device(name, int(idx))
+                        name = line.split(":")[-1].strip(); break
+                t = _classify_device(name)
             except Exception:
                 pass
-            cam = {"index": idx, "name": name, "url": idx, "type": cam_type, "device": dev}
-            result[cam_type if cam_type in result else "usb"].append(cam)
+            cam = {"index": idx, "name": name, "url": idx, "type": t, "device": dev}
+            result[t if t in result else "usb"].append(cam)
             result["all"].append(cam)
-
-        if not devs:
+        if not result["all"]:
             cam = {"index": "0", "name": "USB Camera 0", "url": "0", "type": "usb"}
-            result["usb"].append(cam)
-            result["all"].append(cam)
-
+            result["usb"].append(cam); result["all"].append(cam)
     return result
 
 
 @router.get("/test-camera")
 async def test_camera(source: str = "0"):
-    """Test if camera opens and can provide frames."""
+    """Test if a camera source opens successfully."""
     args = _resolve_camera_input(source, 15, "640x480")
     cmd  = ["ffmpeg"] + args + ["-frames:v", "3", "-f", "null", "-"]
     try:
