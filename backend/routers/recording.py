@@ -38,7 +38,7 @@ def _purge_oldest():
 def _resolve_cam(src: str, output: str) -> list:
     """Build FFmpeg record command matching streaming router's camera handling."""
     if src.startswith("http") or src.startswith("rtsp"):
-        return ["ffmpeg", "-rtsp_transport", "tcp", "-i", src,
+        return ["ffmpeg", "-i", src,
                 "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23",
                 "-c:a", "aac", "-movflags", "+faststart", "-y", output]
     if os.name == "nt":
@@ -190,3 +190,49 @@ async def delete_recording(filepath: str):
     p = RECORDINGS_DIR / filepath
     if p.exists(): p.unlink()
     return {"ok": True}
+
+
+# ─── Replay to live stream ─────────────────────────────────────────────────
+from pydantic import BaseModel as _BaseModel
+
+class ReplayStreamReq(_BaseModel):
+    file_url:  str            # /recordings/YYYY-MM-DD/match_HH-MM-SS.mp4
+    rtmp_url:  str            # rtmp://a.rtmp.youtube.com/live2/KEY
+    speed:     float = 0.5   # 0.25 = 4× slo-mo, 0.5 = 2× slo-mo, 1 = normal
+    start_sec: float = 0.0   # start position in seconds
+    duration:  float = 10.0  # clip duration in seconds
+
+
+@router.post("/replay/stream")
+async def replay_to_stream(req: ReplayStreamReq):
+    """Send a slow-motion replay clip to RTMP live stream via FFmpeg."""
+    rel = req.file_url.lstrip("/")
+    if rel.startswith("recordings/"):
+        rel = rel[len("recordings/"):]
+    fpath = RECORDINGS_DIR / rel
+    if not fpath.exists():
+        raise HTTPException(404, f"Recording not found: {rel}")
+
+    speed = max(0.1, min(2.0, req.speed))
+    vf = f"setpts={1.0/speed:.4f}*PTS"
+    # atempo works in 0.5–2.0 range; chain for extremes
+    af = f"atempo={speed:.4f}" if speed >= 0.5 else f"atempo=0.5,atempo={speed*2:.4f}"
+
+    cmd = [
+        "ffmpeg", "-y",
+        "-ss", str(req.start_sec),
+        "-t",  str(req.duration),
+        "-i",  str(fpath),
+        "-vf", vf, "-af", af,
+        "-c:v", "libx264", "-preset", "veryfast",
+        "-b:v", "2500k", "-maxrate", "2500k", "-bufsize", "5000k",
+        "-g", "60", "-keyint_min", "30", "-sc_threshold", "0",
+        "-c:a", "aac", "-b:a", "128k", "-ar", "44100", "-ac", "2",
+        "-f", "flv", req.rtmp_url
+    ]
+    logger.info(f"Replay stream → {req.rtmp_url} speed={speed}")
+    try:
+        proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+        return {"status": "streaming", "pid": proc.pid, "speed": speed, "duration": req.duration}
+    except Exception as e:
+        raise HTTPException(500, str(e))

@@ -65,11 +65,22 @@ def _ensure_tables():
         label TEXT DEFAULT '',
         created_at TEXT DEFAULT (datetime('now'))
     )""")
-    # Seed ui_state
+    # Seed ui_state — always ensure scorebar defaults to True
     conn.execute(
         "INSERT OR IGNORE INTO ui_state (id,data) VALUES (1,?)",
         (json.dumps({"scorebar": True, "scorecard": False}),)
     )
+    # Also fix any corrupted ui_state where scorebar might be false
+    try:
+        row = conn.execute("SELECT data FROM ui_state WHERE id=1").fetchone()
+        if row:
+            ui = json.loads(row["data"])
+            if ui.get("scorebar") is False and ui.get("scorecard") is False:
+                # Both false = corrupted state, reset to defaults
+                conn.execute("UPDATE ui_state SET data=? WHERE id=1",
+                             (json.dumps({"scorebar": True, "scorecard": False}),))
+    except Exception:
+        pass
     conn.commit()
     conn.close()
 
@@ -83,20 +94,24 @@ _ensure_tables()
 
 @router.get("/match")
 async def get_match():
-    """Overlay polls this every 300ms."""
+    """Overlay polls this every 500ms to get live cricket state."""
     data = _row_or_default("match_state", {})
-    # Also sync with app_state so WS broadcasts work
+    # Ensure sport field is set so overlay renderData() routes correctly
+    if data and "batTeam" in data and "sport" not in data:
+        data["sport"] = "cricket"
     return data
 
 
 @router.post("/match")
 async def post_match(payload: dict, request: Request):
     """Admin pushes full match state here on every ball."""
+    # Ensure sport is always set
+    if "sport" not in payload and ("batTeam" in payload or "runs" in payload):
+        payload["sport"] = "cricket"
     _upsert("match_state", payload)
-    # Update shared state for WS broadcast
     app_state["score"]        = payload
     app_state["active_sport"] = payload.get("sport", "cricket")
-    # Broadcast via WebSocket so all connected clients update immediately
+    # Broadcast via WebSocket for instant overlay update
     try:
         await request.app.state.manager.send_event("CRICKET_UPDATE", payload)
     except Exception:

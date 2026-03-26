@@ -414,7 +414,7 @@ label.field-label{display:block;font-size:0.72rem;text-transform:uppercase;lette
         <div class="sub-nav" id="sub-streaming">
           <div class="sub-item" onclick="goTo('streaming','rtmp')">RTMP Settings</div>
           <div class="sub-item" onclick="goTo('streaming','live')">Live Stream</div>
-          <div class="sub-item" onclick="goTo('streaming','recording')">Recording</div>
+
         </div>
 
         <!-- Recording (separate from streaming) -->
@@ -484,245 +484,185 @@ label.field-label{display:block;font-size:0.72rem;text-transform:uppercase;lette
       <div class="page" id="page-scoring">
 
         <!-- Cricket -->
-        <div class="subpage" id="sp-scoring-cricket">
-          <div class="card" style="padding:10px 14px;background:var(--surface2);border-radius:var(--r2);display:flex;align-items:center;justify-content:space-between;margin-bottom:0">
-            <span style="font-size:0.82rem;color:var(--text2)">🏏 Full Cricket Admin (recommended)</span>
-            <a href="/admin/cricket.html" target="_blank" class="btn btn-accent btn-xs" style="text-decoration:none">Open Admin ↗</a>
-          </div>
-          <div class="card" id="new-match-form-cricket">
-            <div class="card-title">Quick Match (basic)</div>
-            <div class="col">
-              <div><label class="field-label">Team A</label><input id="cr-team-a" value="Team A"/></div>
-              <div><label class="field-label">Team B</label><input id="cr-team-b" value="Team B"/></div>
-              <div><label class="field-label">Overs</label><input type="number" id="cr-overs" value="20" min="1" max="50"/></div>
-              <div>
-                <label class="field-label">Players A — one per line (11 players)</label>
-                <textarea id="cr-players-a" rows="6" placeholder="Player 1
-Player 2
-Player 3..."></textarea>
-                <div class="row" style="margin-top:4px;gap:6px">
-                  <button class="btn btn-ghost btn-xs" onclick="loadSavedTeams('cr-load-team-a','cricket');document.getElementById('cr-load-row-a').style.display='flex'">📂 Load Team</button>
-                  <button class="btn btn-ghost btn-xs" onclick="savePlayers(document.getElementById('cr-team-a').value,document.getElementById('cr-players-a').value,'cricket')">💾 Save Team</button>
-                </div>
-                <div id="cr-load-row-a" style="display:none;gap:6px;margin-top:4px">
-                  <select id="cr-load-team-a" style="flex:1"></select>
-                  <button class="btn btn-accent btn-xs" onclick="loadPlayers(document.getElementById('cr-load-team-a').value,'cr-players-a','cricket')">Load</button>
+                <div class="subpage" id="sp-scoring-cricket">
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <!-- Two large link cards -->
+            <a href="http://localhost:3000/admin/cricket.html" target="_blank" style="text-decoration:none">
+              <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:24px 20px;display:flex;align-items:center;gap:18px;cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+                <div style="font-size:2.4rem;flex-shrink:0">🏏</div>
+                <div>
+                  <div style="font-family:var(--font-h);font-size:1.05rem;font-weight:700;color:var(--text);letter-spacing:.5px">Cricket Admin Scoring</div>
+                  <div style="font-size:0.78rem;color:var(--text3);margin-top:3px">http://localhost:3000/admin/cricket.html</div>
+                  <div style="font-size:0.72rem;color:var(--accent);margin-top:6px;display:flex;align-items:center;gap:4px">Open full scoring admin ↗</div>
                 </div>
               </div>
-              <div>
-                <label class="field-label">Players B — one per line (11 players)</label>
-                <textarea id="cr-players-b" rows="6" placeholder="Player 1
-Player 2
-Player 3..."></textarea>
-                <div class="row" style="margin-top:4px;gap:6px">
-                  <button class="btn btn-ghost btn-xs" onclick="loadSavedTeams('cr-load-team-b','cricket');document.getElementById('cr-load-row-b').style.display='flex'">📂 Load Team</button>
-                  <button class="btn btn-ghost btn-xs" onclick="savePlayers(document.getElementById('cr-team-b').value,document.getElementById('cr-players-b').value,'cricket')">💾 Save Team</button>
-                </div>
-                <div id="cr-load-row-b" style="display:none;gap:6px;margin-top:4px">
-                  <select id="cr-load-team-b" style="flex:1"></select>
-                  <button class="btn btn-accent btn-xs" onclick="loadPlayers(document.getElementById('cr-load-team-b').value,'cr-players-b','cricket')">Load</button>
+            </a>
+            <a href="http://localhost:8000/overlay/cricket_overlay.html" target="_blank" style="text-decoration:none">
+              <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:24px 20px;display:flex;align-items:center;gap:18px;cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='#f5c518'" onmouseout="this.style.borderColor='var(--border)'">
+                <div style="font-size:2.4rem;flex-shrink:0">📺</div>
+                <div>
+                  <div style="font-family:var(--font-h);font-size:1.05rem;font-weight:700;color:var(--text);letter-spacing:.5px">Scoring Overlay Page</div>
+                  <div style="font-size:0.78rem;color:var(--text3);margin-top:3px">http://localhost:8000/overlay/cricket_overlay.html</div>
+                  <div style="font-size:0.72rem;margin-top:6px;display:flex;align-items:center;gap:4px" style="color:#f5c518">Open broadcast overlay ↗</div>
                 </div>
               </div>
-              <button class="btn btn-accent" onclick="startMatch('cricket')">▶ Start Match</button>
-            </div>
-          </div>
-          <div id="cricket-scoring-ui" style="display:none">
-            <div class="scoreboard" id="sb-cricket">
-              <div class="sb-teams">
-                <div class="sb-team"><div class="sb-name" id="cr-sb-a">Team A</div><div class="sb-score" id="cr-sb-sa">0/0</div></div>
-                <div class="sb-vs">vs</div>
-                <div class="sb-team"><div class="sb-name" id="cr-sb-b">Team B</div><div class="sb-score" id="cr-sb-sb">0</div></div>
-              </div>
-              <div class="sb-meta" id="cr-sb-meta">Overs: 0.0 | Inn: 1</div>
-            </div>
-            <!-- Players -->
-            <div class="card">
-              <div class="card-title">Players</div>
-              <div class="col">
-                <div class="row-2">
-                  <div><label class="field-label">Striker</label><input id="cr-striker" placeholder="Striker" onblur="selectPlayer('striker',this.value)"/></div>
-                  <div><label class="field-label">Non-Striker</label><input id="cr-nonstriker" placeholder="Non-Striker" onblur="selectPlayer('non_striker',this.value)"/></div>
-                </div>
-                <div><label class="field-label">Bowler</label><input id="cr-bowler" placeholder="Bowler" onblur="selectPlayer('bowler',this.value)"/></div>
-              </div>
-            </div>
-            <!-- Current Over -->
-            <div class="card">
-              <div class="card-title">Current Over</div>
-              <div class="over-dots" id="cr-over-dots"></div>
-            </div>
-            <!-- Scoring buttons -->
-            <div class="card">
-              <div class="card-title">Score</div>
-              <div class="cricket-grid">
-                <div class="ball-btn" onclick="scoreEvt('run_0')">0</div>
-                <div class="ball-btn" onclick="scoreEvt('run_1')">1</div>
-                <div class="ball-btn" onclick="scoreEvt('run_2')">2</div>
-                <div class="ball-btn" onclick="scoreEvt('run_3')">3</div>
-                <div class="ball-btn b4" onclick="scoreEvt('run_4')">4</div>
-                <div class="ball-btn b6" onclick="scoreEvt('run_6')">6</div>
-                <div class="ball-btn bw" onclick="scoreEvt('wicket')">WKT</div>
-                <div class="ball-btn be" onclick="scoreEvt('wide')">Wd</div>
-                <div class="ball-btn be" onclick="scoreEvt('no_ball')">NB</div>
-                <div class="ball-btn be" onclick="scoreEvt('bye')">Bye</div>
-                <div class="ball-btn be" onclick="scoreEvt('leg_bye')">LB</div>
+            </a>
+            <!-- Quick info card -->
+            <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r2);padding:14px 16px">
+              <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:8px">Quick guide</div>
+              <div style="font-size:0.82rem;color:var(--text2);line-height:1.8">
+                1. Open <strong>Admin Scoring</strong> to enter teams and score<br>
+                2. Open <strong>Overlay Page</strong> in OBS as browser source<br>
+                3. The overlay updates automatically as you score
               </div>
             </div>
           </div>
         </div>
 
         <!-- Football -->
-        <div class="subpage" id="sp-scoring-football">
-          <div class="card" style="padding:10px 14px;background:var(--surface2);border-radius:var(--r2);display:flex;align-items:center;justify-content:space-between;margin-bottom:0">
-            <span style="font-size:0.82rem;color:var(--text2)">⚽ Full Football Admin</span>
-            <a href="/admin/football.html" target="_blank" class="btn btn-accent btn-xs" style="text-decoration:none">Open Admin ↗</a>
-          </div>
-          <div class="card" id="new-match-form-football">
-            <div class="card-title">New Football Match</div>
-            <div class="col">
-              <div><label class="field-label">Team A</label><input id="fb-team-a" value="Home"/></div>
-              <div><label class="field-label">Team B</label><input id="fb-team-b" value="Away"/></div>
-              <button class="btn btn-accent" onclick="startMatch('football')">▶ Start Match</button>
-            </div>
-          </div>
-          <div id="football-scoring-ui" style="display:none">
-            <div class="scoreboard">
-              <div class="sb-teams">
-                <div class="sb-team"><div class="sb-name" id="fb-sb-a">Home</div><div class="sb-score" id="fb-sb-sa">0</div></div>
-                <div class="sb-vs">vs</div>
-                <div class="sb-team"><div class="sb-name" id="fb-sb-b">Away</div><div class="sb-score" id="fb-sb-sb">0</div></div>
+                <div class="subpage" id="sp-scoring-football">
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <!-- Two large link cards -->
+            <a href="http://localhost:3000/admin/football.html" target="_blank" style="text-decoration:none">
+              <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:24px 20px;display:flex;align-items:center;gap:18px;cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+                <div style="font-size:2.4rem;flex-shrink:0">⚽</div>
+                <div>
+                  <div style="font-family:var(--font-h);font-size:1.05rem;font-weight:700;color:var(--text);letter-spacing:.5px">Football Admin Scoring</div>
+                  <div style="font-size:0.78rem;color:var(--text3);margin-top:3px">http://localhost:3000/admin/football.html</div>
+                  <div style="font-size:0.72rem;color:var(--accent);margin-top:6px;display:flex;align-items:center;gap:4px">Open full scoring admin ↗</div>
+                </div>
               </div>
-              <div class="sb-meta" id="fb-sb-meta">Half 1</div>
-            </div>
-            <div class="card">
-              <div class="card-title">Goals</div>
-              <div class="row-2">
-                <button class="btn btn-success" style="padding:20px;font-size:1.2rem" onclick="scoreEvt('goal_a')">⚽ <span id="fb-btn-a">Home</span></button>
-                <button class="btn btn-success" style="padding:20px;font-size:1.2rem" onclick="scoreEvt('goal_b')">⚽ <span id="fb-btn-b">Away</span></button>
+            </a>
+            <a href="http://localhost:8000/overlay/football_overlay.html" target="_blank" style="text-decoration:none">
+              <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:24px 20px;display:flex;align-items:center;gap:18px;cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='#3b82f6'" onmouseout="this.style.borderColor='var(--border)'">
+                <div style="font-size:2.4rem;flex-shrink:0">📺</div>
+                <div>
+                  <div style="font-family:var(--font-h);font-size:1.05rem;font-weight:700;color:var(--text);letter-spacing:.5px">Scoring Overlay Page</div>
+                  <div style="font-size:0.78rem;color:var(--text3);margin-top:3px">http://localhost:8000/overlay/football_overlay.html</div>
+                  <div style="font-size:0.72rem;margin-top:6px;display:flex;align-items:center;gap:4px" style="color:#3b82f6">Open broadcast overlay ↗</div>
+                </div>
               </div>
-            </div>
-            <div class="card">
-              <div class="card-title">Cards</div>
-              <div class="row-4">
-                <button class="btn btn-warn btn-sm" onclick="scoreEvt('yellow_a')">🟡 Home</button>
-                <button class="btn btn-danger btn-sm" onclick="scoreEvt('red_a')">🟥 Home</button>
-                <button class="btn btn-warn btn-sm" onclick="scoreEvt('yellow_b')">🟡 Away</button>
-                <button class="btn btn-danger btn-sm" onclick="scoreEvt('red_b')">🟥 Away</button>
+            </a>
+            <!-- Quick info card -->
+            <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r2);padding:14px 16px">
+              <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:8px">Quick guide</div>
+              <div style="font-size:0.82rem;color:var(--text2);line-height:1.8">
+                1. Open <strong>Admin Scoring</strong> to enter teams and score<br>
+                2. Open <strong>Overlay Page</strong> in OBS as browser source<br>
+                3. The overlay updates automatically as you score
               </div>
             </div>
-            <div class="card"><button class="btn btn-ghost" style="width:100%" onclick="scoreEvt('half')">🔁 Half Time</button></div>
           </div>
         </div>
 
         <!-- Hockey -->
-        <div class="subpage" id="sp-scoring-hockey">
-          <div class="card" style="padding:10px 14px;background:var(--surface2);border-radius:var(--r2);display:flex;align-items:center;justify-content:space-between;margin-bottom:0">
-            <span style="font-size:0.82rem;color:var(--text2)">🏑 Full Hockey Admin</span>
-            <a href="/admin/hockey.html" target="_blank" class="btn btn-accent btn-xs" style="text-decoration:none">Open Admin ↗</a>
-          </div>
-          <div class="card" id="new-match-form-hockey">
-            <div class="card-title">New Hockey Match</div>
-            <div class="col">
-              <div><label class="field-label">Team A</label><input id="hk-team-a" value="Team A"/></div>
-              <div><label class="field-label">Team B</label><input id="hk-team-b" value="Team B"/></div>
-              <button class="btn btn-accent" onclick="startMatch('hockey')">▶ Start Match</button>
-            </div>
-          </div>
-          <div id="hockey-scoring-ui" style="display:none">
-            <div class="scoreboard">
-              <div class="sb-teams">
-                <div class="sb-team"><div class="sb-name" id="hk-sb-a">A</div><div class="sb-score" id="hk-sb-sa">0</div></div>
-                <div class="sb-vs">vs</div>
-                <div class="sb-team"><div class="sb-name" id="hk-sb-b">B</div><div class="sb-score" id="hk-sb-sb">0</div></div>
+                <div class="subpage" id="sp-scoring-hockey">
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <!-- Two large link cards -->
+            <a href="http://localhost:3000/admin/hockey.html" target="_blank" style="text-decoration:none">
+              <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:24px 20px;display:flex;align-items:center;gap:18px;cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+                <div style="font-size:2.4rem;flex-shrink:0">🏑</div>
+                <div>
+                  <div style="font-family:var(--font-h);font-size:1.05rem;font-weight:700;color:var(--text);letter-spacing:.5px">Hockey Admin Scoring</div>
+                  <div style="font-size:0.78rem;color:var(--text3);margin-top:3px">http://localhost:3000/admin/hockey.html</div>
+                  <div style="font-size:0.72rem;color:var(--accent);margin-top:6px;display:flex;align-items:center;gap:4px">Open full scoring admin ↗</div>
+                </div>
               </div>
-              <div class="sb-meta" id="hk-sb-meta">Quarter 1</div>
-            </div>
-            <div class="card">
-              <div class="card-title">Goals & Penalty Corners</div>
-              <div class="row-2" style="gap:8px;margin-bottom:8px">
-                <button class="btn btn-success" style="padding:18px" onclick="scoreEvt('goal_a')">🥅 Goal A</button>
-                <button class="btn btn-success" style="padding:18px" onclick="scoreEvt('goal_b')">🥅 Goal B</button>
+            </a>
+            <a href="http://localhost:8000/overlay/hockey_overlay.html" target="_blank" style="text-decoration:none">
+              <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:24px 20px;display:flex;align-items:center;gap:18px;cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='#06b6d4'" onmouseout="this.style.borderColor='var(--border)'">
+                <div style="font-size:2.4rem;flex-shrink:0">📺</div>
+                <div>
+                  <div style="font-family:var(--font-h);font-size:1.05rem;font-weight:700;color:var(--text);letter-spacing:.5px">Scoring Overlay Page</div>
+                  <div style="font-size:0.78rem;color:var(--text3);margin-top:3px">http://localhost:8000/overlay/hockey_overlay.html</div>
+                  <div style="font-size:0.72rem;margin-top:6px;display:flex;align-items:center;gap:4px" style="color:#06b6d4">Open broadcast overlay ↗</div>
+                </div>
               </div>
-              <div class="row-2">
-                <button class="btn btn-warn btn-sm" onclick="scoreEvt('pc_a')">PC Team A</button>
-                <button class="btn btn-warn btn-sm" onclick="scoreEvt('pc_b')">PC Team B</button>
+            </a>
+            <!-- Quick info card -->
+            <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r2);padding:14px 16px">
+              <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:8px">Quick guide</div>
+              <div style="font-size:0.82rem;color:var(--text2);line-height:1.8">
+                1. Open <strong>Admin Scoring</strong> to enter teams and score<br>
+                2. Open <strong>Overlay Page</strong> in OBS as browser source<br>
+                3. The overlay updates automatically as you score
               </div>
             </div>
-            <div class="card"><button class="btn btn-ghost" style="width:100%" onclick="scoreEvt('next_quarter')">Next Quarter ▶</button></div>
           </div>
         </div>
 
         <!-- Volleyball -->
-        <div class="subpage" id="sp-scoring-volleyball">
-          <div class="card" style="padding:10px 14px;background:var(--surface2);border-radius:var(--r2);display:flex;align-items:center;justify-content:space-between;margin-bottom:0">
-            <span style="font-size:0.82rem;color:var(--text2)">🏐 Full Volleyball Admin</span>
-            <a href="/admin/volleyball.html" target="_blank" class="btn btn-accent btn-xs" style="text-decoration:none">Open Admin ↗</a>
-          </div>
-          <div class="card" id="new-match-form-volleyball">
-            <div class="card-title">New Volleyball Match</div>
-            <div class="col">
-              <div><label class="field-label">Team A</label><input id="vb-team-a" value="Team A"/></div>
-              <div><label class="field-label">Team B</label><input id="vb-team-b" value="Team B"/></div>
-              <button class="btn btn-accent" onclick="startMatch('volleyball')">▶ Start Match</button>
-            </div>
-          </div>
-          <div id="volleyball-scoring-ui" style="display:none">
-            <div class="scoreboard">
-              <div class="sb-teams">
-                <div class="sb-team"><div class="sb-name" id="vb-sb-a">A</div><div class="sb-score" id="vb-sb-sa">0</div></div>
-                <div class="sb-vs">vs</div>
-                <div class="sb-team"><div class="sb-name" id="vb-sb-b">B</div><div class="sb-score" id="vb-sb-sb">0</div></div>
+                <div class="subpage" id="sp-scoring-volleyball">
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <!-- Two large link cards -->
+            <a href="http://localhost:3000/admin/volleyball.html" target="_blank" style="text-decoration:none">
+              <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:24px 20px;display:flex;align-items:center;gap:18px;cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+                <div style="font-size:2.4rem;flex-shrink:0">🏐</div>
+                <div>
+                  <div style="font-family:var(--font-h);font-size:1.05rem;font-weight:700;color:var(--text);letter-spacing:.5px">Volleyball Admin Scoring</div>
+                  <div style="font-size:0.78rem;color:var(--text3);margin-top:3px">http://localhost:3000/admin/volleyball.html</div>
+                  <div style="font-size:0.72rem;color:var(--accent);margin-top:6px;display:flex;align-items:center;gap:4px">Open full scoring admin ↗</div>
+                </div>
               </div>
-              <div class="sb-meta" id="vb-sb-meta">Set 1: 0 - 0</div>
-            </div>
-            <div class="card">
-              <div class="card-title">Points</div>
-              <div class="row-2">
-                <button class="btn btn-accent" style="padding:24px;font-size:1.5rem" onclick="scoreEvt('point_a')">+1 A</button>
-                <button class="btn btn-accent" style="padding:24px;font-size:1.5rem" onclick="scoreEvt('point_b')">+1 B</button>
+            </a>
+            <a href="http://localhost:8000/overlay/volleyball_overlay.html" target="_blank" style="text-decoration:none">
+              <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:24px 20px;display:flex;align-items:center;gap:18px;cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='#a855f7'" onmouseout="this.style.borderColor='var(--border)'">
+                <div style="font-size:2.4rem;flex-shrink:0">📺</div>
+                <div>
+                  <div style="font-family:var(--font-h);font-size:1.05rem;font-weight:700;color:var(--text);letter-spacing:.5px">Scoring Overlay Page</div>
+                  <div style="font-size:0.78rem;color:var(--text3);margin-top:3px">http://localhost:8000/overlay/volleyball_overlay.html</div>
+                  <div style="font-size:0.72rem;margin-top:6px;display:flex;align-items:center;gap:4px" style="color:#a855f7">Open broadcast overlay ↗</div>
+                </div>
               </div>
-            </div>
-            <div class="card">
-              <div class="card-title">Controls</div>
-              <div class="row-3">
-                <button class="btn btn-warn btn-sm" onclick="scoreEvt('timeout_a')">⏸ TO A</button>
-                <button class="btn btn-warn btn-sm" onclick="scoreEvt('timeout_b')">⏸ TO B</button>
-                <button class="btn btn-ghost btn-sm" onclick="scoreEvt('set_over')">Set Over</button>
+            </a>
+            <!-- Quick info card -->
+            <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r2);padding:14px 16px">
+              <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:8px">Quick guide</div>
+              <div style="font-size:0.82rem;color:var(--text2);line-height:1.8">
+                1. Open <strong>Admin Scoring</strong> to enter teams and score<br>
+                2. Open <strong>Overlay Page</strong> in OBS as browser source<br>
+                3. The overlay updates automatically as you score
               </div>
             </div>
           </div>
         </div>
 
         <!-- Custom -->
-        <div class="subpage" id="sp-scoring-custom">
-          <div class="card" style="padding:10px 14px;background:var(--surface2);border-radius:var(--r2);display:flex;align-items:center;justify-content:space-between;margin-bottom:0">
-            <span style="font-size:0.82rem;color:var(--text2)">🎯 Full Custom Admin</span>
-            <a href="/admin/custom.html" target="_blank" class="btn btn-accent btn-xs" style="text-decoration:none">Open Admin ↗</a>
-          </div>
-          <div class="card" id="new-match-form-custom">
-            <div class="card-title">New Custom Match</div>
-            <div class="col">
-              <div><label class="field-label">Team A</label><input id="cu-team-a" value="Team A"/></div>
-              <div><label class="field-label">Team B</label><input id="cu-team-b" value="Team B"/></div>
-              <button class="btn btn-accent" onclick="startMatch('custom')">▶ Start Match</button>
-            </div>
-          </div>
-          <div id="custom-scoring-ui" style="display:none">
-            <div class="scoreboard">
-              <div class="sb-teams">
-                <div class="sb-team"><div class="sb-name" id="cu-sb-a">A</div><div class="sb-score" id="cu-sb-sa">0</div></div>
-                <div class="sb-vs">vs</div>
-                <div class="sb-team"><div class="sb-name" id="cu-sb-b">B</div><div class="sb-score" id="cu-sb-sb">0</div></div>
+                <div class="subpage" id="sp-scoring-custom">
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <!-- Two large link cards -->
+            <a href="http://localhost:3000/admin/custom.html" target="_blank" style="text-decoration:none">
+              <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:24px 20px;display:flex;align-items:center;gap:18px;cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+                <div style="font-size:2.4rem;flex-shrink:0">🎯</div>
+                <div>
+                  <div style="font-family:var(--font-h);font-size:1.05rem;font-weight:700;color:var(--text);letter-spacing:.5px">Custom Admin Scoring</div>
+                  <div style="font-size:0.78rem;color:var(--text3);margin-top:3px">http://localhost:3000/admin/custom.html</div>
+                  <div style="font-size:0.72rem;color:var(--accent);margin-top:6px;display:flex;align-items:center;gap:4px">Open full scoring admin ↗</div>
+                </div>
               </div>
-            </div>
-            <div class="card">
-              <div class="row-2">
-                <button class="btn btn-accent" style="padding:22px;font-size:1.4rem" onclick="scoreEvt('score_a')">+1 A</button>
-                <button class="btn btn-accent" style="padding:22px;font-size:1.4rem" onclick="scoreEvt('score_b')">+1 B</button>
+            </a>
+            <a href="http://localhost:8000/overlay/custom_overlay.html" target="_blank" style="text-decoration:none">
+              <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:24px 20px;display:flex;align-items:center;gap:18px;cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='#f97316'" onmouseout="this.style.borderColor='var(--border)'">
+                <div style="font-size:2.4rem;flex-shrink:0">📺</div>
+                <div>
+                  <div style="font-family:var(--font-h);font-size:1.05rem;font-weight:700;color:var(--text);letter-spacing:.5px">Scoring Overlay Page</div>
+                  <div style="font-size:0.78rem;color:var(--text3);margin-top:3px">http://localhost:8000/overlay/custom_overlay.html</div>
+                  <div style="font-size:0.72rem;margin-top:6px;display:flex;align-items:center;gap:4px" style="color:#f97316">Open broadcast overlay ↗</div>
+                </div>
+              </div>
+            </a>
+            <!-- Quick info card -->
+            <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r2);padding:14px 16px">
+              <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:8px">Quick guide</div>
+              <div style="font-size:0.82rem;color:var(--text2);line-height:1.8">
+                1. Open <strong>Admin Scoring</strong> to enter teams and score<br>
+                2. Open <strong>Overlay Page</strong> in OBS as browser source<br>
+                3. The overlay updates automatically as you score
               </div>
             </div>
           </div>
         </div>
+
       </div><!-- /page-scoring -->
 
       <!-- ── CAMERA ──────────────────────────────────────────────── -->
@@ -730,28 +670,40 @@ Player 3..."></textarea>
 
         <!-- USB Camera -->
         <div class="subpage" id="sp-camera-usb">
+          <!-- Detect all cameras -->
           <div class="card">
-            <div class="card-title">USB / Webcam</div>
-            <div class="col">
-              <div><label class="field-label">Camera Index</label>
-                <select id="usb-index">
-                  <option value="0">Camera 0</option>
-                  <option value="1">Camera 1</option>
-                  <option value="2">Camera 2</option>
-                </select>
-              </div>
-              <div class="row">
-                <button class="btn btn-ghost btn-sm" onclick="detectUSB()">🔍 Auto Detect</button>
-                <button class="btn btn-accent btn-sm" onclick="setUsbActive()">✓ Set Active</button>
-              </div>
-              <div id="usb-detect-result" style="font-size:0.8rem;color:var(--text3)"></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+              <div class="card-title" style="margin-bottom:0">Camera Detection</div>
+              <button class="btn btn-accent btn-sm" onclick="detectAllCameras()">🔍 Detect All Cameras</button>
+            </div>
+            <div id="usb-detect-result" style="font-size:0.82rem;color:var(--text3)">Click Detect to find cameras</div>
+          </div>
+
+          <!-- Integrated / Built-in cameras -->
+          <div class="card">
+            <div class="card-title">💻 Integrated / Built-in Camera</div>
+            <div id="integrated-cam-list">
+              <div style="font-size:0.82rem;color:var(--text3)">Click Detect above to find integrated cameras</div>
             </div>
           </div>
+
+          <!-- External USB cameras -->
           <div class="card">
-            <div class="card-title">Preview</div>
+            <div class="card-title">🔌 External USB Camera</div>
+            <div id="usb-ext-cam-list">
+              <div style="font-size:0.82rem;color:var(--text3)">Click Detect above to find USB cameras</div>
+            </div>
+          </div>
+
+          <!-- Preview -->
+          <div class="card">
+            <div class="card-title">Camera Preview</div>
             <div class="preview-wrap" id="usb-preview-wrap">
-              <span class="preview-label">USB CAM</span>
-              <div class="preview-err">📷<br>Select camera and click Set Active</div>
+              <span class="preview-label">CAM</span>
+              <div class="preview-err">📷<br>Set a camera as active to preview</div>
+            </div>
+            <div id="usb-cam-info" style="margin-top:8px;font-size:0.78rem;color:var(--text3);text-align:center">
+              USB/Integrated cameras: live preview available via IP Webcam app or MJPEG server
             </div>
           </div>
         </div>
@@ -811,28 +763,27 @@ Player 3..."></textarea>
 
         <!-- Saved Sources -->
         <div class="subpage" id="sp-camera-saved">
+          <!-- Saved sources list -->
           <div class="card">
-            <div class="card-title">Saved Camera Sources</div>
-            <div id="saved-cams-list">
-              <div class="empty-state"><div class="empty-icon">📷</div>No saved cameras</div>
-            </div>
-            <div style="margin-top:10px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+              <div class="card-title" style="margin-bottom:0">Saved Camera Sources</div>
               <button class="btn btn-ghost btn-sm" onclick="loadSavedCams()">🔄 Refresh</button>
             </div>
-          </div>
-          <div class="card">
-            <div class="card-title">Active Camera Preview</div>
-            <div class="preview-wrap" id="active-preview-wrap">
-              <span class="preview-label">ACTIVE</span>
-              <div class="preview-err" id="active-preview-err">No active camera</div>
+            <div id="saved-cams-list">
+              <div class="empty-state"><div class="empty-icon">📷</div>No saved cameras yet. Add cameras in the IP Camera or Mobile Camera tabs.</div>
             </div>
           </div>
-          <!-- Overlay preview -->
+
+          <!-- Multi-camera preview grid — shows up to 4 cameras simultaneously -->
           <div class="card">
-            <div class="card-title">Overlay Preview</div>
-            <div class="preview-wrap">
-              <span class="preview-label">OVERLAY</span>
-              <iframe src="/overlay/index.html" style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;background:#000;pointer-events:none"></iframe>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+              <div class="card-title" style="margin-bottom:0">Live Camera Previews</div>
+              <button class="btn btn-ghost btn-xs" onclick="refreshAllPreviews()">🔄 Refresh</button>
+            </div>
+            <div id="multi-cam-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <div style="font-size:0.8rem;color:var(--text3);grid-column:1/-1;padding:20px 0;text-align:center">
+                Add IP or Mobile cameras to see previews here
+              </div>
             </div>
           </div>
         </div>
@@ -876,52 +827,65 @@ Player 3..."></textarea>
         </div>
 
         <!-- Live Stream -->
-        <div class="subpage" id="sp-streaming-live">
+                <div class="subpage" id="sp-streaming-live">
+          <!-- Camera source selector: all sources -->
           <div class="card">
             <div class="card-title">Camera Source for Stream</div>
             <div class="col">
               <div style="display:flex;gap:8px">
-                <select id="stream-cam-select" style="flex:1">
-                  <option value="">Select camera...</option>
+                <select id="stream-cam-select" style="flex:1" onchange="onStreamCamChange(this.value)">
+                  <option value="">Select camera source...</option>
                 </select>
-                <button class="btn btn-ghost btn-xs" onclick="loadStreamDevices()" style="white-space:nowrap;padding:6px 10px">🔍 Detect</button>
+                <button class="btn btn-ghost btn-xs" onclick="loadAllStreamSources()" style="white-space:nowrap;padding:6px 10px">🔍 Detect</button>
               </div>
-              <div id="stream-custom-url-row" style="display:none">
-                <label class="field-label">Camera URL (RTSP / HTTP)</label>
-                <input id="stream-custom-url" placeholder="rtsp://192.168.1.x/stream or http://ip:8080/video"/>
+              <div id="stream-cam-custom-row" style="display:none">
+                <label class="field-label">Camera URL (RTSP / HTTP / RTSP)</label>
+                <input id="stream-cam-custom-url" placeholder="rtsp://192.168.1.x/stream or http://ip:8080/video"/>
               </div>
-              <div id="stream-devices-info" style="font-size:0.78rem;color:var(--text3)">Click Detect to list available cameras</div>
-              <button class="btn btn-accent btn-sm" onclick="applyStreamCamera()">✓ Use Selected Camera for Stream</button>
+              <div id="stream-devices-info" style="font-size:0.78rem;color:var(--text3)">Click Detect to list all cameras</div>
+              <button class="btn btn-accent btn-sm" onclick="applyStreamCamera()">✓ Set This Camera for Stream</button>
+              <div id="stream-active-camera" style="font-size:0.78rem;color:var(--green)"></div>
             </div>
           </div>
+
+          <!-- Stream control with multi-stream support -->
           <div class="card">
             <div class="card-title">Stream Control</div>
             <div class="status-row">
               <span class="badge badge-idle" id="stream-badge">● Idle</span>
               <span id="stream-platform-display" style="color:var(--text3);font-size:0.82rem"></span>
             </div>
-            <div class="big-action-row" style="margin-bottom:12px">
+            <div style="margin-bottom:10px">
+              <label class="field-label">Stream ID — use unique IDs to stream multiple cameras at once</label>
+              <input id="stream-id-input" value="main" placeholder="main" style="max-width:200px"/>
+            </div>
+            <div class="big-action-row" style="margin-bottom:8px">
               <button class="btn btn-danger" id="btn-go-live" onclick="startStream()">▶ Go Live</button>
-              <button class="btn btn-ghost" id="btn-stop-live" onclick="stopStream()" disabled>■ Stop Stream</button>
+              <button class="btn btn-ghost" id="btn-stop-live" onclick="stopStream()">■ Stop Stream</button>
             </div>
-            <div style="font-size:0.8rem;color:var(--text3)">
-              Configure stream key in RTMP Settings before going live.
+            <button class="btn btn-warn btn-sm" onclick="stopAllStreams()" style="width:100%;margin-bottom:8px">■ Stop ALL Streams</button>
+            <div style="font-size:0.78rem;color:var(--text3)">
+              Configure RTMP key in RTMP Settings tab.<br>
+              To stream a 2nd camera simultaneously: change the Stream ID, select camera, click Go Live.
             </div>
           </div>
+
+          <!-- Live active streams dashboard -->
           <div class="card">
-            <div class="card-title">Camera Devices <button class="btn btn-ghost btn-xs" style="margin-left:8px" onclick="loadStreamDevices()">🔍 Detect</button></div>
-            <div id="stream-devices-info" style="font-size:0.82rem;color:var(--text3);line-height:1.8">Click Detect to list cameras</div>
-          </div>
-          <div class="card">
-            <div class="card-title">FFmpeg Log <button class="btn btn-ghost btn-xs" style="margin-left:8px" onclick="loadStreamLog()">🔄 Refresh</button></div>
-            <pre id="stream-log-output" style="font-size:0.72rem;color:var(--text3);max-height:180px;overflow-y:auto;white-space:pre-wrap;background:var(--bg);border-radius:6px;padding:10px">No log yet.</pre>
-          </div>
-          <div class="card">
-            <div class="card-title">Overlay Preview</div>
-            <div class="preview-wrap" id="stream-preview-wrap">
-              <span class="preview-label">OVERLAY</span>
-              <iframe src="/overlay/index.html" style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;background:#000;pointer-events:none"></iframe>
+            <div class="card-title">Active Streams <button class="btn btn-ghost btn-xs" style="margin-left:8px" onclick="refreshStreamStatus()">🔄 Refresh</button></div>
+            <div id="active-streams-list">
+              <div style="font-size:0.82rem;color:var(--text3)">No active streams</div>
             </div>
+          </div>
+
+          <!-- FFmpeg debug log -->
+          <div class="card">
+            <div class="card-title">FFmpeg Debug Log <button class="btn btn-ghost btn-xs" style="margin-left:8px" onclick="loadStreamLog()">🔄 Refresh</button></div>
+            <div style="margin-bottom:6px;display:flex;gap:8px;align-items:center">
+              <label class="field-label" style="margin:0">Stream ID:</label>
+              <input id="log-stream-id" value="main" style="max-width:100px;padding:4px 8px;font-size:0.82rem"/>
+            </div>
+            <pre id="stream-log-output" style="font-size:0.72rem;color:var(--text3);max-height:160px;overflow-y:auto;white-space:pre-wrap;background:var(--bg);border-radius:6px;padding:10px">No log yet.</pre>
           </div>
         </div>
 
@@ -965,6 +929,34 @@ Player 3..."></textarea>
               <button class="btn btn-accent btn-xs" onclick="setSpeed(replay_vid,'1')">1×</button>
               <button class="btn btn-ghost btn-xs" onclick="stepFrame(replay_vid,-1)">◀ Frame</button>
               <button class="btn btn-ghost btn-xs" onclick="stepFrame(replay_vid,1)">Frame ▶</button>
+              <button class="btn btn-ghost btn-xs" onclick="replay_vid().pause()">⏸ Pause</button>
+              <button class="btn btn-ghost btn-xs" onclick="replay_vid().play()">▶ Play</button>
+            </div>
+            <div style="margin-top:12px;background:var(--surface2);border-radius:var(--r);padding:14px;border:1px solid var(--border)">
+              <div class="card-title" style="font-size:0.75rem;margin-bottom:10px">📡 Send Replay to Live Stream</div>
+              <div class="col" style="gap:8px">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                  <div>
+                    <label class="field-label">Replay Speed</label>
+                    <select id="replay-stream-speed">
+                      <option value="0.25">0.25× (4× slow-mo)</option>
+                      <option value="0.5" selected>0.5× (2× slow-mo)</option>
+                      <option value="0.75">0.75×</option>
+                      <option value="1">1× Normal</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="field-label">Duration (seconds)</label>
+                    <input type="number" id="replay-stream-dur" value="10" min="1" max="60"/>
+                  </div>
+                </div>
+                <div>
+                  <label class="field-label">RTMP URL (YouTube/Facebook)</label>
+                  <input id="replay-stream-rtmp" placeholder="rtmp://a.rtmp.youtube.com/live2/YOUR-KEY"/>
+                </div>
+                <button class="btn btn-danger" onclick="sendReplayToStream()" style="width:100%">📡 Send Replay to Live Stream</button>
+                <div id="replay-stream-status" style="font-size:0.78rem;color:var(--text3)"></div>
+              </div>
             </div>
           </div>
         </div>
@@ -1024,7 +1016,7 @@ Player 3..."></textarea>
               <button class="btn btn-danger" id="btn-start-rec" onclick="startRecording()">⏺ Start Recording</button>
               <button class="btn btn-ghost" id="btn-stop-rec" onclick="stopRecording()" disabled>■ Stop Recording</button>
             </div>
-            <div style="font-size:0.8rem;color:var(--text3);line-height:1.7">Saves to /recordings/ as MP4. Stops automatically if disk is full.
+            <div style="font-size:0.8rem;color:var(--text3);line-height:1.7">Records to /recordings/YYYY-MM-DD/match_HH-MM-SS.mp4 — stops automatically when disk is full.
             </div>
           </div>
           <div class="card">
@@ -1238,7 +1230,7 @@ Player 3..."></textarea>
           <div class="card">
             <div class="card-title">System</div>
             <div style="font-size:0.85rem;color:var(--text2);line-height:2">
-              Version: <strong>SportsCaster Pro v2.0</strong><br>
+              Version: <strong>SportsCaster Pro v11.0</strong><br>
               API: <a href="http://localhost:8000/docs" target="_blank" style="color:var(--accent)">localhost:8000/docs</a><br>
               Overlay: <a href="/overlay/index.html" target="_blank" style="color:var(--accent)">Open in new tab</a>
             </div>

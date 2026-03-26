@@ -45,11 +45,11 @@ button:active{opacity:.65;transform:scale(.95);}
   <h1><span class="live-dot"></span>Football Admin</h1>
   <div style="display:flex;align-items:center;gap:10px">
     <span style="font-size:11px;color:var(--muted);font-family:'Barlow Condensed',sans-serif"><span class="api-dot" id="apiDot"></span>API</span>
-    <a href="/" style="font-family:'Barlow Condensed',sans-serif;font-size:11px;color:var(--muted);text-decoration:none">← Back</a>
+    <a href="/" style="font-family:'Barlow Condensed',sans-serif;font-size:11px;color:var(--muted);text-decoration:none">← Dashboard</a>
   </div>
 </div>
 <div class="infobar">
-  <span>HALF <b id="iHalf">1ST</b></span>
+  <span>HALF <b id="iHalf">1</b></span>
   <span><b id="iTeamA">Home</b> <b id="iScoreA" style="color:var(--green)">0</b> — <b id="iScoreB" style="color:var(--green)">0</b> <b id="iTeamB">Away</b></span>
   <span>CARDS A: Y<b id="iYA">0</b> R<b id="iRA">0</b> · B: Y<b id="iYB">0</b> R<b id="iRB">0</b></span>
 </div>
@@ -104,8 +104,8 @@ button:active{opacity:.65;transform:scale(.95);}
   <div class="card" id="ctrlCard" style="display:none">
     <h4>⏱ Controls</h4>
     <div class="g2">
-      <button style="background:#100828;color:#c4a0ff;border:1px solid #281050" onclick="halfTime()">🔄 HALF TIME</button>
-      <button class="b-rst" onclick="fullReset()">⚠ RESET</button>
+      <button style="background:#100828;color:#c4a0ff;border:1px solid #281050" onclick="halfTime()">🔄 Half Time / 2nd Half</button>
+      <button class="b-rst" onclick="fullReset()">⚠ Reset Match</button>
     </div>
   </div>
 </div>
@@ -116,11 +116,11 @@ const API = `http://${location.hostname}:8000/api`;
 let d = null;
 
 async function apiPost(path, body) {
-  const r = await fetch(`${API}${path}`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const r = await fetch(`${API}${path}`, {cache:'no-store',method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
   return r.json();
 }
 async function apiGet(path) {
-  const r = await fetch(`${API}${path}`);
+  const r = await fetch(`${API}${path}`, {cache:'no-store'});
   return r.json();
 }
 
@@ -178,7 +178,12 @@ async function fullReset() {
   if (!confirm('Reset match?')) return;
   await apiPost('/football/state', {});
   d = null;
-  location.reload();
+  // Reset UI without page reload
+  ['dTA','dTB'].forEach(id=>{document.getElementById(id).textContent=''});
+  ['dSA','dSB'].forEach(id=>{document.getElementById(id).textContent='0'});
+  document.getElementById('setupCard').style.display='';
+  ['scoreDisplay','scoringCard','cardsCard','ctrlCard'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
+  toast('Match reset.');
 }
 
 function renderUI() {
@@ -206,14 +211,29 @@ async function pollMatch() {
     if (data && data.team_a) {
       d = data;
       renderUI();
-      document.getElementById('setupCard').style.display='none';
-      ['scoreDisplay','scoringCard','cardsCard','ctrlCard'].forEach(id => document.getElementById(id).style.display='');
+      document.getElementById('setupCard').style.display = 'none';
+      ['scoreDisplay','scoringCard','cardsCard','ctrlCard'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = '';
+      });
     }
-  } catch(e) { setApiDot(false); }
+  } catch(e) {
+    setApiDot(false);
+  }
 }
 
-setInterval(pollMatch, 500);
+// Start polling immediately then every 500ms
 pollMatch();
+setInterval(pollMatch, 500);
+
+function toast(msg) {
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#10b981;color:#fff;padding:10px 18px;border-radius:8px;font-size:14px;z-index:9999';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
 </script>
 </body>
 </html>

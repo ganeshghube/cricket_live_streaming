@@ -112,8 +112,8 @@ button:active{opacity:.65;transform:scale(.95);}
   <span class="fh-pill" id="iFH">FREE HIT</span>
 </div>
 
-<div class="pv-lbl">▶ LIVE OVERLAY PREVIEW</div>
-<div class="pv"><iframe id="overlayFrame" src="/overlay/index.html"></iframe></div>
+<div class="pv-lbl">▶ LIVE OVERLAY — http://localhost:8000/overlay/cricket_overlay.html</div>
+<div class="pv"><iframe id="overlayFrame" src="http://localhost:8000/overlay/cricket_overlay.html"></iframe></div>
 
 <div class="body">
 
@@ -374,6 +374,12 @@ async function saveState(state) {
     renderInfoBar();
     fillDropdowns();
     fillErrorFields();
+    // Overlay polls every 500ms automatically — no iframe reload needed
+    // But force the preview iframe to stay pointed at correct URL
+    const fr = document.getElementById('overlayFrame');
+    if (fr && !fr.src.includes(':8000')) {
+      fr.src = 'http://localhost:8000/overlay/cricket_overlay.html';
+    }
   } catch(e) {
     setApiDot(false);
     console.error('saveState failed:', e);
@@ -419,7 +425,7 @@ async function pollMatch() {
   try {
     const data = await apiGet('/match');
     setApiDot(true);
-    if (data && Object.keys(data).length > 0) {
+    if (data && Object.keys(data).length > 0 && data.sport === 'cricket') {
       d = data;
       renderInfoBar();
       fillDropdowns();
@@ -708,7 +714,18 @@ async function fullReset() {
   updateUndoBadge(0);
   await apiPost('/match', {}).catch(()=>{});
   d = null;
-  location.reload();
+  // Reset UI without page reload
+  document.getElementById('iInn').textContent = '1ST';
+  document.getElementById('iBat').textContent = '—';
+  document.getElementById('iSc').textContent  = '0/0';
+  document.getElementById('iOv').textContent  = '0.0';
+  document.getElementById('iCRR').textContent = '0.00';
+  document.getElementById('iOvB').textContent = '—';
+  document.getElementById('iFH').className    = 'fh-pill';
+  document.getElementById('og').innerHTML     = '';
+  document.getElementById('undoCount').textContent = '0';
+  document.getElementById('undoBtn').disabled = true;
+  toast('Match reset. Enter new squads and initialize.');
 }
 
 // ── SAVE SCORECARD ────────────────────────────────────────────────────────
@@ -739,7 +756,7 @@ function saveScorecard() {
   batHtml+=`<tr style="color:#888"><td colspan="2">Extras</td><td><b>${ext}</b></td><td colspan="4"></td></tr>`;
   batHtml+=`<tr style="color:#f0b429"><td colspan="2"><b>TOTAL</b></td><td><b>${d.runs}/${d.wkts}</b></td><td colspan="2">(${ovStr(d.balls)} ovs)</td><td colspan="2"></td></tr></tbody></table>`;
 
-  let bwlHtml=`<h3>⚾ ${d.bowlTeam} — Bowling</h3><table><thead><tr><th>Bowler</th><th>O</th><th>R</th><th>W</th><th>Wd</th><th>Nb</th><th>Eco</th></tr></thead><tbody>`;
+  let bwlHtml=`<h3>⚾ ${d.bowlTeam} — Bowling</h3><table><thead><tr><th>Bowler</th><th>O</th><th>R</th><th>W</th><th>Wd</th><th>Nb</th><th>Economy</th></tr></thead><tbody>`;
   (d.bowlRows||[]).forEach(row=>{
     if(!row.balls&&!(row.wides||0)&&!(row.noballs||0)){bwlHtml+=`<tr style="color:#444"><td>${row.name}</td><td colspan="6">did not bowl</td></tr>`;return;}
     bwlHtml+=`<tr><td>${row.name}</td><td>${ovStr(row.balls)}</td><td>${row.runs}</td><td><b>${row.wkts}</b></td><td>${row.wides||0}</td><td>${row.noballs||0}</td><td>${eco(row.runs,row.balls)}</td></tr>`;
@@ -756,15 +773,27 @@ function saveScorecard() {
 }
 
 // ── STARTUP ───────────────────────────────────────────────────────────────
+
+function toast(msg) {
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#10b981;color:#fff;padding:10px 18px;border-radius:8px;font-size:0.85rem;z-index:9999;animation:slideIn .2s ease';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+  setInterval(poll, 500);
+}
+
 async function init() {
   await loadSquads();
   await loadUndoCount();
   await pollMatch();
   // Poll match state every 500ms — drives infobar + overlay sync
-  _polling = setInterval(pollMatch, 500);
+ // _polling = setInterval(pollMatch, 500);
 }
 
 init();
+
+
 </script>
 </body>
 </html>

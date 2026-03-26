@@ -45,13 +45,13 @@ button:active{opacity:.65;transform:scale(.95);}
   <h1><span class="live-dot"></span>Hockey Admin</h1>
   <div style="display:flex;align-items:center;gap:10px">
     <span style="font-size:11px;color:var(--muted);font-family:'Barlow Condensed',sans-serif"><span class="api-dot" id="apiDot"></span>API</span>
-    <a href="/" style="font-family:'Barlow Condensed',sans-serif;font-size:11px;color:var(--muted);text-decoration:none">← Back</a>
+    <a href="/" style="font-family:'Barlow Condensed',sans-serif;font-size:11px;color:var(--muted);text-decoration:none">← Dashboard</a>
   </div>
 </div>
 <div class="infobar">
   <span>QTR <b id="iQtr">1</b></span>
   <span><b id="iTeamA">Team A</b> <b id="iSA" style="color:var(--green)">0</b> — <b id="iSB" style="color:var(--green)">0</b> <b id="iTeamB">Team B</b></span>
-  <span>PC A:<b id="iPCA">0</b> B:<b id="iPCB">0</b></span>
+  <span>Pen. Corners A:<b id="iPCA">0</b> B:<b id="iPCB">0</b></span>
 </div>
 <div class="body">
   <div class="card" id="setupCard">
@@ -80,26 +80,26 @@ button:active{opacity:.65;transform:scale(.95);}
     </div>
     <h4>🏒 Penalty Corner</h4>
     <div class="g2">
-      <button class="b-pc" onclick="pc('a')">PC <span id="btn-pc-a">A</span></button>
-      <button class="b-pc" onclick="pc('b')">PC <span id="btn-pc-b">B</span></button>
+      <button class="b-pc" onclick="pc('a')">Pen. Corner <span id="btn-pc-a">A</span></button>
+      <button class="b-pc" onclick="pc('b')">Pen. Corner <span id="btn-pc-b">B</span></button>
     </div>
   </div>
 
   <div class="card" id="cardsCard" style="display:none">
     <h4>🟡 Cards</h4>
     <div class="g4">
-      <button class="b-yellow" onclick="cardEvt('a','yellow')">🟡 A</button>
-      <button class="b-red" onclick="cardEvt('a','red')">🟥 A</button>
-      <button class="b-yellow" onclick="cardEvt('b','yellow')">🟡 B</button>
-      <button class="b-red" onclick="cardEvt('b','red')">🟥 B</button>
+      <button class="b-yellow" onclick="cardEvt('a','yellow')">🟡 Yellow Card A</button>
+      <button class="b-red" onclick="cardEvt('a','red')">🟥 Red Card A</button>
+      <button class="b-yellow" onclick="cardEvt('b','yellow')">🟡 Yellow Card B</button>
+      <button class="b-red" onclick="cardEvt('b','red')">🟥 Red Card B</button>
     </div>
   </div>
 
   <div class="card" id="ctrlCard" style="display:none">
     <h4>⏱ Controls</h4>
     <div class="g2">
-      <button style="background:#100828;color:#c4a0ff;border:1px solid #281050" onclick="nextQtr()">Next Quarter ▶</button>
-      <button class="b-rst" onclick="fullReset()">⚠ RESET</button>
+      <button style="background:#100828;color:#c4a0ff;border:1px solid #281050" onclick="nextQtr()">▶ Next Quarter</button>
+      <button class="b-rst" onclick="fullReset()">⚠ Reset Match</button>
     </div>
   </div>
 </div>
@@ -109,8 +109,8 @@ const API = `http://${location.hostname}:8000/api`;
 let d = null;
 const $ = id => document.getElementById(id);
 
-async function apiPost(p,b){const r=await fetch(`${API}${p}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});return r.json();}
-async function apiGet(p){const r=await fetch(`${API}${p}`);return r.json();}
+async function apiPost(p,b){const r=await fetch(`${API}${p}`,{cache:'no-store',method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});return r.json();}
+async function apiGet(p){const r=await fetch(`${API}${p}`, {cache:'no-store'});return r.json();}
 function setDot(ok){$('apiDot').className='api-dot '+(ok?'ok':'');}
 
 async function save(state) {
@@ -128,7 +128,7 @@ async function goal(t){if(!d)return;const s=JSON.parse(JSON.stringify(d));s.scor
 async function pc(t){if(!d)return;const s=JSON.parse(JSON.stringify(d));s.penalty_corners[t]++;await save(s);}
 async function cardEvt(t,type){if(!d)return;const s=JSON.parse(JSON.stringify(d));s.cards[t][type]++;await save(s);}
 async function nextQtr(){if(!d)return;const s=JSON.parse(JSON.stringify(d));s.quarter=Math.min(s.quarter+1,4);await save(s);}
-async function fullReset(){if(!confirm('Reset?'))return;await apiPost('/hockey/state',{});location.reload();}
+async function fullReset(){if(!confirm('Reset?'))return;await apiPost('/hockey/state',{});d=null;$('setupCard').style.display='';['scoreDisplay','scoringCard','cardsCard','ctrlCard'].forEach(id=>{const el=$(id);if(el)el.style.display='none';});toast('Match reset.');}
 
 function render(){
   if(!d||!d.team_a)return;
@@ -146,7 +146,17 @@ function render(){
 async function poll(){
   try{const data=await apiGet('/hockey/state');setDot(true);if(data&&data.team_a){d=data;render();$('setupCard').style.display='none';['scoreDisplay','scoringCard','cardsCard','ctrlCard'].forEach(id=>$(id).style.display='');}}catch(e){setDot(false);}
 }
-setInterval(poll,500); poll();
+poll();
+setInterval(poll, 500);
+
+function toast(msg) {
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#10b981;color:#fff;padding:10px 18px;border-radius:8px;font-size:14px;z-index:9999';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
 </script>
 </body>
 </html>

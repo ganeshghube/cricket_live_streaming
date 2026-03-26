@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""SportsCaster Pro v2 - Dev Launcher"""
+"""SportsCaster Pro — Dev Launcher"""
 import subprocess, sys, os, threading, time
 
-ROOT        = os.path.dirname(os.path.abspath(__file__))
-BACKEND_DIR = os.path.join(ROOT, "backend")
-FRONTEND_DIR= os.path.join(ROOT, "frontend")
+ROOT         = os.path.dirname(os.path.abspath(__file__))
+BACKEND_DIR  = os.path.join(ROOT, "backend")
+FRONTEND_DIR = os.path.join(ROOT, "frontend")
 
 def _find_python():
     for c in [
@@ -23,12 +23,13 @@ def pipe(proc, tag):
         print(f"[{tag}] {line.decode(errors='replace').rstrip()}", flush=True)
 
 def main():
-    print("="*54)
-    print("  SportsCaster Pro v2")
-    print(f"  Python  : {PYTHON}")
-    print("="*54)
+    print("="*60)
+    print("  SportsCaster Pro")
+    print(f"  Python: {PYTHON}")
+    print("="*60)
+
     if not os.path.isdir(BACKEND_DIR):
-        print("ERROR: Run from sportscaster2 root."); sys.exit(1)
+        print("ERROR: Run from project root."); sys.exit(1)
 
     print("\n[1/2] Backend  → http://localhost:8000")
     be = subprocess.Popen(
@@ -43,18 +44,31 @@ def main():
         cwd=FRONTEND_DIR, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     threading.Thread(target=pipe, args=(fe,"FE "), daemon=True).start()
 
-    print("\n"+"="*54)
-    print("  Frontend : http://localhost:3000")
-    print("  API Docs : http://localhost:8000/docs")
-    print("  Overlay  : http://localhost:8000/overlay/index.html")
-    print("  Login    : admin / admin")
-    print("  Ctrl+C   : stop all")
-    print("="*54+"\n")
+    print("\n" + "="*60)
+    print("  MAIN UI        : http://localhost:3000")
+    print("  API DOCS       : http://localhost:8000/docs")
+    print()
+    print("  CRICKET ADMIN  : http://localhost:3000/admin/cricket.html")
+    print("  FOOTBALL ADMIN : http://localhost:3000/admin/football.html")
+    print("  HOCKEY ADMIN   : http://localhost:3000/admin/hockey.html")
+    print("  VOLLEYBALL ADM : http://localhost:3000/admin/volleyball.html")
+    print("  CUSTOM ADMIN   : http://localhost:3000/admin/custom.html")
+    print()
+    print("  CRICKET OVR    : http://localhost:8000/overlay/index.html")
+    print("  CRICKET OVR    : http://localhost:8000/overlay/cricket_overlay.html")
+    print("  FOOTBALL OVR   : http://localhost:8000/overlay/football_overlay.html")
+    print("  HOCKEY OVR     : http://localhost:8000/overlay/hockey_overlay.html")
+    print("  VOLLEYBALL OVR : http://localhost:8000/overlay/volleyball_overlay.html")
+    print("  CUSTOM OVR     : http://localhost:8000/overlay/custom_overlay.html")
+    print()
+    print("  LOGIN          : admin / admin")
+    print("="*60 + "\n")
+
     try:
         while True:
             time.sleep(1)
             if be.poll() is not None:
-                print("\n[ERROR] Backend crashed — see [API] lines above.")
+                print("\n[ERROR] Backend crashed — check [API] output above.")
                 fe.terminate(); sys.exit(1)
     except KeyboardInterrupt:
         print("\nStopping...")

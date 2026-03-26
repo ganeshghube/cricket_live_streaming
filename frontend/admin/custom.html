@@ -35,7 +35,7 @@ button:active{opacity:.65;transform:scale(.95);}
   <h1><span class="live-dot"></span>Custom Admin</h1>
   <div style="display:flex;align-items:center;gap:10px">
     <span style="font-size:11px;color:var(--muted);font-family:'Barlow Condensed',sans-serif"><span class="api-dot" id="apiDot"></span>API</span>
-    <a href="/" style="font-family:'Barlow Condensed',sans-serif;font-size:11px;color:var(--muted);text-decoration:none">← Back</a>
+    <a href="/" style="font-family:'Barlow Condensed',sans-serif;font-size:11px;color:var(--muted);text-decoration:none">← Dashboard</a>
   </div>
 </div>
 <div class="infobar">
@@ -49,7 +49,7 @@ button:active{opacity:.65;transform:scale(.95);}
       <div><label>Team B Name</label><input id="teamB" value="Team B"/></div>
     </div>
     <div style="margin-top:10px"><label>Sport / Event Name</label><input id="sportName" value="Custom"/></div>
-    <button class="b-gold" style="margin-top:12px" onclick="initMatch()">⚡ INITIALIZE</button>
+    <button class="b-gold" style="margin-top:12px" onclick="initMatch()">⚡ INITIALIZE MATCH</button>
   </div>
   <div id="scoringCard" style="display:none">
     <div style="text-align:center;padding:20px;background:#0c0c20;border-radius:8px;border:1px solid var(--brd);margin-bottom:14px">
@@ -66,22 +66,22 @@ button:active{opacity:.65;transform:scale(.95);}
       </div>
     </div>
     <div class="card">
-      <h4>Points</h4>
+      <h4>🎯 Points</h4>
       <div class="g2">
         <button class="b-pt" onclick="point('a')">+1 <span id="btn-ta">A</span></button>
         <button class="b-pt" onclick="point('b')">+1 <span id="btn-tb">B</span></button>
       </div>
     </div>
     <div class="card" style="margin-top:14px">
-      <button class="b-rst" onclick="fullReset()">⚠ RESET</button>
+      <button class="b-rst" onclick="fullReset()">⚠ Reset Match</button>
     </div>
   </div>
 </div>
 <script>
 'use strict';
 const API=`http://${location.hostname}:8000/api`;let d=null;const $=id=>document.getElementById(id);
-async function post(p,b){const r=await fetch(`${API}${p}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});return r.json();}
-async function get(p){const r=await fetch(`${API}${p}`);return r.json();}
+async function post(p,b){const r=await fetch(`${API}${p}`,{cache:'no-store',method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});return r.json();}
+async function get(p){const r=await fetch(`${API}${p}`, {cache:'no-store'});return r.json();}
 function dot(ok){$('apiDot').className='api-dot '+(ok?'ok':'');}
 async function save(s){try{await post('/custom/state',s);dot(true);d=s;render();}catch(e){dot(false);}}
 async function initMatch(){
@@ -90,7 +90,7 @@ async function initMatch(){
   $('setupCard').style.display='none';$('scoringCard').style.display='block';
 }
 async function point(t){if(!d)return;const s=JSON.parse(JSON.stringify(d));s.score[t]++;await save(s);}
-async function fullReset(){if(!confirm('Reset?'))return;await post('/custom/state',{});location.reload();}
+async function fullReset(){if(!confirm('Reset?'))return;await post('/custom/state',{});d=null;$('setupCard').style.display='';$('scoringCard').style.display='none';toast('Match reset.');}
 function render(){
   if(!d||!d.team_a)return;
   $('dTA').textContent=d.team_a;$('dTB').textContent=d.team_b;
@@ -100,7 +100,17 @@ function render(){
   $('btn-ta').textContent=d.team_a;$('btn-tb').textContent=d.team_b;
 }
 async function poll(){try{const data=await get('/custom/state');dot(true);if(data&&data.team_a){d=data;render();$('setupCard').style.display='none';$('scoringCard').style.display='block';}}catch(e){dot(false);}}
-setInterval(poll,500);poll();
+poll();
+setInterval(poll, 500);
+
+function toast(msg) {
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#10b981;color:#fff;padding:10px 18px;border-radius:8px;font-size:14px;z-index:9999';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
 </script>
 </body>
 </html>

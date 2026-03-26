@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Football Live Overlay — SportsCaster Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:rgba(0,0,0,0);font-family:'Barlow Condensed',sans-serif;overflow:hidden;height:100vh;width:100vw;}
+.bar{position:absolute;bottom:40px;left:50%;transform:translateX(-50%);width:94%;max-width:1080px;filter:drop-shadow(0 6px 30px rgba(0,0,0,.95));}
+.score-strip{display:flex;height:70px;background:rgba(6,8,18,0.97);border-top:4px solid #3b82f6;border-radius:4px 4px 0 0;overflow:hidden;align-items:center;}
+.team{flex:1;display:flex;align-items:center;padding:0 20px;gap:14px;}
+.team.right{flex-direction:row-reverse;justify-content:flex-start;}
+.t-name{font-size:22px;font-weight:900;color:#fff;text-transform:uppercase;letter-spacing:2px;}
+.t-score{font-size:52px;font-weight:900;color:#3b82f6;line-height:1;min-width:50px;text-align:center;}
+.divider{width:2px;height:50px;background:rgba(255,255,255,0.15);}
+.centre{width:180px;flex-shrink:0;text-align:center;}
+.sport-lbl{font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:3px;}
+.meta-lbl{font-size:17px;color:#e2e8f0;font-weight:700;margin-top:2px;}
+.live-dot{width:7px;height:7px;border-radius:50%;background:#ef4444;display:inline-block;margin-right:5px;animation:pulse 1.5s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.info-strip{background:rgba(0,0,0,.88);border-radius:0 0 4px 4px;border:1px solid rgba(255,255,255,.07);border-top:none;padding:4px 20px;display:flex;gap:20px;font-size:11px;color:#64748b;letter-spacing:.5px;}
+.info-strip b{color:#3b82f6;}
+</style>
+</head>
+<body>
+<div class="bar">
+  <div class="score-strip">
+    <div class="team">
+      <div class="t-score" id="sA">0</div>
+      <div class="divider"></div>
+      <div class="t-name" id="tA">HOME</div>
+    </div>
+    <div class="centre">
+      <div class="sport-lbl"><span class="live-dot"></span>FOOTBALL</div>
+      <div class="meta-lbl" id="meta">1st Half</div>
+    </div>
+    <div class="team right">
+      <div class="t-name" id="tB">AWAY</div>
+      <div class="divider"></div>
+      <div class="t-score" id="sB">0</div>
+    </div>
+  </div>
+  <div class="info-strip">
+    <span>HALF <b id="half">1</b></span>
+    <span><b id="tA-cards">HOME: Y0 R0</b></span>
+    <span><b id="tB-cards">AWAY: Y0 R0</b></span>
+  </div>
+</div>
+<script>
+const API = `http://${location.hostname}:8000/api`;
+const G = id => document.getElementById(id);
+async function poll(){
+  try{
+    const r = await fetch(`\${API}/football/state`, {cache:'no-store'});
+    const d = await r.json();
+    if(!d||!d.team_a) return;
+    G('tA').textContent = d.team_a.toUpperCase();
+    G('tB').textContent = d.team_b.toUpperCase();
+    G('sA').textContent = d.score?.a ?? 0;
+    G('sB').textContent = d.score?.b ?? 0;
+    G('meta').textContent = (d.half===2?'2nd':'1st') + ' Half';
+    G('half').textContent = d.half || 1;
+    G('tA-cards').textContent = `${d.team_a}: Y${d.cards?.a?.yellow??0} R${d.cards?.a?.red??0}`;
+    G('tB-cards').textContent = `${d.team_b}: Y${d.cards?.b?.yellow??0} R${d.cards?.b?.red??0}`;
+  }catch(e){}
+}
+poll();
+setInterval(poll, 500);
+// WebSocket for instant updates
+(function(){
+  const ws = new WebSocket(`${location.protocol==='https:'?'wss':'ws'}://${location.hostname}:8000/ws`);
+  ws.onmessage = e => { try{ const m=JSON.parse(e.data); if(m.payload?.sport==='football') poll(); }catch(e){} };
+  ws.onclose = () => setTimeout(arguments.callee, 3000);
+})();
+</script>
+</body>
+</html>

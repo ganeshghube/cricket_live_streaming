@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>SportsCaster Overlay</title>
+<title>Cricket Live Overlay — SportsCaster Pro</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;500;600;700;800;900&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -276,8 +276,10 @@ function ballCls(v) {
 
 // ── Apply UI visibility state ─────────────────────────────────────────────
 function applyUI(ui) {
-  _uiState = ui || {scorebar:true,scorecard:false};
-  $('sbWrap').className  = _uiState.scorebar===false  ? 'sb-wrap hidden'  : 'sb-wrap';
+  _uiState = ui || {scorebar:true, scorecard:false};
+  // scorebar is visible UNLESS explicitly set to false
+  const showBar = (_uiState.scorebar !== false);
+  $('sbWrap').className = showBar ? 'sb-wrap' : 'sb-wrap hidden';
   $('scWrap').className  = _uiState.scorecard          ? 'sc-wrap'         : 'sc-wrap hidden';
 }
 
@@ -435,20 +437,28 @@ function renderSimple(d, sport) {
 // ══════════════════════════════════════════════════════════════════════════
 async function pollMatch() {
   try {
-    const r = await fetch(`${API}/match`);
+    const r = await fetch(`${API}/match`, {cache: 'no-store'});
     if (!r.ok) return;
     const data = await r.json();
-    if (data && Object.keys(data).length > 0) renderData(data);
-  } catch(e){}
+    if (data && typeof data === 'object' && Object.keys(data).length > 0) {
+      renderData(data);
+    }
+  } catch(e) {
+    // Network error — will retry on next interval
+  }
 }
 
 async function pollUI() {
   try {
-    const r = await fetch(`${API}/ui`);
+    const r = await fetch(`${API}/ui`, {cache: 'no-store'});
     if (!r.ok) return;
     const data = await r.json();
+    // Default scorebar to true if not explicitly set
+    if (data && typeof data.scorebar === 'undefined') data.scorebar = true;
     applyUI(data);
-  } catch(e){}
+  } catch(e) {
+    // Keep current ui state on error
+  }
 }
 
 // WebSocket as fast secondary update path
@@ -458,9 +468,14 @@ function connectWS() {
   ws.onmessage = e => {
     try {
       const msg = JSON.parse(e.data);
-      if (msg.type==='CRICKET_UPDATE'||msg.type==='SCORE_UPDATE') {
-        const state = msg.payload.state||msg.payload;
-        if (state && !state.reset) renderData(state);
+      if (msg.type==='CRICKET_UPDATE') {
+        const state = msg.payload.state || msg.payload;
+        if (state && !state.reset && Object.keys(state).length > 0) renderData(state);
+      }
+      if (msg.type==='SCORE_UPDATE') {
+        // For other sports — poll /api/match won't help, but renderData can show simple bar
+        const state = msg.payload.state || msg.payload;
+        if (state && !state.reset && Object.keys(state).length > 0) renderData(state);
       }
       if (msg.type==='UI_UPDATE') applyUI({..._uiState,...(msg.payload||{})});
       if (msg.type==='INIT' && msg.payload.score) {
@@ -472,12 +487,13 @@ function connectWS() {
   ws.onclose = () => setTimeout(connectWS, 3000);
 }
 
-// Start polling + WS
-setInterval(pollMatch, 300);
-setInterval(pollUI, 1000);
-connectWS();
-// 5-min reload to prevent memory leaks on Pi
-setTimeout(()=>location.reload(), 5*60*1000);
+// Start polling immediately then continue on interval
+pollMatch();
+pollUI();
+setInterval(pollMatch, 500);   // Poll every 500ms for score updates
+setInterval(pollUI,   2000);   // Poll every 2s for show/hide state
+connectWS();                    // WebSocket as instant secondary path
+// No page reload needed — polling + WebSocket keeps score live
 </script>
 </body>
 </html>
