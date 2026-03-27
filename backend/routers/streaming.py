@@ -137,30 +137,34 @@ def _resolve_camera_input(src: str, fps: int, res: str) -> list:
 def _best_encoder() -> list:
     """
     Detect hardware encoder, fall back to libx264.
-    Correct encoder flags per encoder type.
+    NVENC: use minimal safe params — no -level (causes "Invalid argument" with webcams).
     """
     try:
         out = subprocess.check_output(
             ["ffmpeg", "-encoders"], stderr=subprocess.STDOUT, text=True, timeout=8
         )
+        # Raspberry Pi hardware encoder
         if "h264_v4l2m2m" in out:
             logger.info("HW encoder: h264_v4l2m2m (Raspberry Pi)")
             return ["-c:v", "h264_v4l2m2m"]
+        # NVIDIA NVENC — minimal flags to avoid "Invalid argument" with webcam input
         if "h264_nvenc" in out:
             logger.info("HW encoder: h264_nvenc (NVIDIA)")
             return [
                 "-c:v", "h264_nvenc",
-                "-preset", "p4",
+                "-preset", "fast",      # "fast" works on all NVENC versions; p4 requires newer SDK
+                "-rc", "vbr",           # variable bitrate — more stable with webcam input
                 "-profile:v", "main",
-                "-level", "4.1",
+                "-pix_fmt", "yuv420p",
             ]
+        # Intel Quick Sync
         if "h264_qsv" in out:
             logger.info("HW encoder: h264_qsv (Intel)")
-            return ["-c:v", "h264_qsv", "-profile:v", "main"]
+            return ["-c:v", "h264_qsv", "-profile:v", "main", "-pix_fmt", "yuv420p"]
     except Exception:
         pass
 
-    # CPU libx264 — best compatibility for all platforms
+    # CPU libx264 — safest, works everywhere
     return [
         "-c:v", "libx264",
         "-preset", "veryfast",
@@ -188,8 +192,18 @@ def _build_cmd(cfg: StreamConfig, rtmp_url: str) -> list:
     )
 
     enc = _best_encoder()
-    br  = cfg.bitrate.lower().rstrip("k") + "k" if cfg.bitrate.lower().endswith("k") else cfg.bitrate
-    buf = str(int(cfg.bitrate.rstrip("kKmM")) * 2) + "k"
+    # Normalise bitrate: "4000k", "4000K", "4000" all become "4000k"
+    _br_raw = cfg.bitrate.strip()
+    if _br_raw.lower().endswith("k"):
+        br  = _br_raw[:-1] + "k"
+        _br_num = int(_br_raw[:-1])
+    elif _br_raw.lower().endswith("m"):
+        _br_num = int(_br_raw[:-1]) * 1000
+        br  = f"{_br_num}k"
+    else:
+        _br_num = int(_br_raw)
+        br  = f"{_br_num}k"
+    buf = f"{_br_num * 2}k"
 
     return (
         ["ffmpeg", "-y"]
@@ -431,3 +445,74 @@ async def test_camera(source: str = "0"):
         return {"ok": False, "source": source, "output": "Timeout — camera not responding"}
     except Exception as e:
         return {"ok": False, "source": source, "output": str(e)}
+
+# ── Local stream preview (HLS segments) ──────────────────────────────────
+import shutil as _shutil
+
+_local_proc: Optional[subprocess.Popen] = None
+_HLS_DIR = Path("../hls")
+
+
+@router.post("/start-local")
+async def start_local_stream(request: Request):
+    """
+    Start a local HLS stream from active camera.
+    Segments are written to /hls/ and served as static files.
+    Browser can play via <video src="/hls/stream.m3u8">.
+    """
+    global _local_proc
+    if _local_proc and _local_proc.poll() is None:
+        return {"status": "already_running", "url": "/hls/stream.m3u8"}
+
+    _HLS_DIR.mkdir(parents=True, exist_ok=True)
+    # Remove old segments
+    for f in _HLS_DIR.glob("*.ts"): f.unlink()
+    for f in _HLS_DIR.glob("*.m3u8"): f.unlink()
+
+    src = app_state.get("camera_source", "0") or "0"
+    cam_args = _resolve_camera_input(src, 25, "1280x720")
+    enc = _best_encoder()
+
+    cmd = (
+        ["ffmpeg", "-y"]
+        + cam_args
+        + ["-vf", "scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2:color=black,format=yuv420p"]
+        + enc
+        + [
+            "-b:v", "2000k", "-maxrate", "2500k", "-bufsize", "4000k",
+            "-g", "50", "-keyint_min", "25", "-sc_threshold", "0",
+            "-f", "hls",
+            "-hls_time", "2",
+            "-hls_list_size", "6",
+            "-hls_flags", "delete_segments",
+            str(_HLS_DIR / "stream.m3u8"),
+        ]
+    )
+    logger.info(f"Local HLS stream: {' '.join(cmd[:8])}...")
+    try:
+        _local_proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+    except FileNotFoundError:
+        raise HTTPException(500, "FFmpeg not found")
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+    app_state["local_stream"] = "live"
+    return {"status": "live", "url": "/hls/stream.m3u8", "pid": _local_proc.pid}
+
+
+@router.post("/stop-local")
+async def stop_local_stream():
+    global _local_proc
+    if _local_proc and _local_proc.poll() is None:
+        _local_proc.terminate()
+        try: _local_proc.wait(timeout=5)
+        except: _local_proc.kill()
+    _local_proc = None
+    app_state["local_stream"] = "idle"
+    return {"status": "stopped"}
+
+
+@router.get("/local-status")
+async def local_stream_status():
+    running = _local_proc is not None and _local_proc.poll() is None
+    return {"running": running, "url": "/hls/stream.m3u8" if running else None}

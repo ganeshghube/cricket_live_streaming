@@ -25,26 +25,55 @@ function authHeaders(){const h={'Content-Type':'application/json'};if(token)h['X
 
 async function checkSession(){
   const saved=loadToken();if(!saved)return false;
-  try{const r=await fetch(`${API}/auth/me`,{credentials:'include',headers:{'X-Session-Token':saved}});if(r.ok){token=saved;return true;}}catch(e){}
+  try{const r=await fetch(`${API}/auth/me`,{headers:{'X-Session-Token':saved}});if(r.ok){token=saved;return true;}}catch(e){}
   clearToken();return false;
 }
 
-async function apiGet(path){const r=await fetch(`${API}${path}`,{credentials:'include',headers:authHeaders()});if(!r.ok){const t=await r.text();throw new Error(t);}return r.json();}
-async function apiPost(path,body={}){const r=await fetch(`${API}${path}`,{method:'POST',credentials:'include',headers:authHeaders(),body:JSON.stringify(body)});if(!r.ok){const t=await r.text();throw new Error(t);}return r.json();}
-async function apiDel(path){return fetch(`${API}${path}`,{method:'DELETE',credentials:'include',headers:authHeaders()});}
+async function apiGet(path){const r=await fetch(`${API}${path}`,{headers:authHeaders()});if(!r.ok){const t=await r.text();throw new Error(t);}return r.json();}
+async function apiPost(path,body={}){const r=await fetch(`${API}${path}`,{method:'POST',headers:authHeaders(),body:JSON.stringify(body)});if(!r.ok){const t=await r.text();throw new Error(t);}return r.json();}
+async function apiDel(path){return fetch(`${API}${path}`,{method:'DELETE',headers:authHeaders()});}
 
 // AUTH
 async function doLogin(){
-  const u=$('u').value,p=$('p').value;
-  try{const data=await apiPost('/auth/login',{username:u,password:p});saveToken(data.token);$('login-screen').style.display='none';$('app').style.display='flex';initApp();}
-  catch(e){$('login-err').textContent='Invalid credentials';}
+  const u=($('u')&&$('u').value||'').trim();
+  const p=($('p')&&$('p').value||'').trim();
+  const errEl=$('login-err');
+  const btn=document.querySelector('.btn-login');
+  if(!u||!p){if(errEl)errEl.textContent='Enter username and password';return;}
+  if(errEl){errEl.textContent='Connecting...';errEl.style.color='#888';}
+  if(btn)btn.disabled=true;
+  try{
+    const resp=await fetch(`${API}/auth/login`,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({username:u,password:p})
+    });
+    if(!resp.ok){
+      let msg='Login failed ('+resp.status+')';
+      try{const j=await resp.json();msg=j.detail||j.message||msg;}catch(_){}
+      if(errEl){errEl.textContent=msg;errEl.style.color='var(--red)';}
+      return;
+    }
+    const data=await resp.json();
+    if(!data||!data.token){if(errEl)errEl.textContent='No token in response';return;}
+    saveToken(data.token);
+    if(errEl)errEl.textContent='';
+    $('login-screen').style.display='none';
+    $('app').style.display='flex';
+    initApp();
+  }catch(networkErr){
+    if(errEl){
+      errEl.style.color='var(--red)';
+      errEl.innerHTML='&#9888; Cannot reach server at <b>'+location.hostname+':8000</b><br>'+
+        '<small>Is <code>python run.py</code> running? Same WiFi?</small>';
+    }
+  }finally{if(btn)btn.disabled=false;}
 }
 async function doLogout(){try{await apiPost('/auth/logout',{});}catch(e){}clearToken();location.reload();}
 $('p').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
 
 // BOOT
 async function bootApp(){const ok=await checkSession();if(ok){$('login-screen').style.display='none';$('app').style.display='flex';initApp();}}
-function initApp(){connectWS();loadSettings();loadSavedCams();syncStreamStatus();syncRecordingStatus();loadCameraDevices();goTo('scoring','cricket');}
+function initApp(){connectWS();loadSettings();loadSavedCams();syncStreamStatus();syncRecordingStatus();loadCameraDevices();updateIpUrls();goTo('scoring','cricket');}
 bootApp();
 
 // WEBSOCKET
@@ -87,7 +116,7 @@ function goTo(section,sub){
   if(section==='replay'    &&sub==='recordings')loadRecordings();
   if(section==='replay'    &&sub==='reviews')   loadReviews();
   if(section==='camera'    &&sub==='saved')     loadSavedCams();
-  if(section==='camera'    &&sub==='usb')       detectAllCameras();
+  if(section==='camera'&&sub==='usb') detectAllCameras();
   if(section==='ai'        &&sub==='training')  loadSnapshots();
   if(section==='ai'        &&sub==='models')    loadModels();
   if(section==='streaming' &&sub==='live')      {syncStreamStatus();loadAllStreamSources();setTimeout(refreshStreamStatus,500);}
@@ -164,12 +193,12 @@ async function activateCameraByUrl(url, label, type='usb') {
         await apiPost(`/cameras/${saved.id}/activate`, {});
       } catch(e) {
         await fetch(`${API}/cameras/activate-url?url=${encodeURIComponent(url)}&label=${encodeURIComponent(label)}`,
-          {method:'POST',credentials:'include',headers:authHeaders()});
+          {method:'POST',headers:authHeaders()});
       }
     } else {
       // USB / integrated — activate in memory
       await fetch(`${API}/cameras/activate-url?url=${encodeURIComponent(url)}&label=${encodeURIComponent(label)}`,
-        {method:'POST',credentials:'include',headers:authHeaders()});
+        {method:'POST',headers:authHeaders()});
     }
     updateCameraPreviewAll(url);
     toast(`Camera set: ${label}`);
@@ -380,7 +409,7 @@ async function applyStreamCamera() {
 
   try {
     await fetch(`${API}/cameras/activate-url?url=${encodeURIComponent(url)}`,
-      {method:'POST', credentials:'include', headers:authHeaders()});
+      {method:'POST', headers:authHeaders()});
     toast(`Camera set for stream: ${url}`);
     const el = $('stream-active-camera');
     if (el) el.textContent = `✓ Active for stream: ${url}`;
@@ -479,6 +508,16 @@ async function startStream() {
       updateStreamBadge(true);
       toast(`Stream '${streamId}' started!`);
       setTimeout(refreshStreamStatus, 1000);
+      // Show camera switch row and populate it
+      const switchRow = $('stream-switch-cam-row');
+      if (switchRow) switchRow.style.display = '';
+      // Populate switch dropdown from same sources
+      const switchSel = $('stream-switch-select');
+      const mainSel   = $('stream-cam-select');
+      if (switchSel && mainSel) switchSel.innerHTML = mainSel.innerHTML;
+      // Change Go Live button to Stop Live
+      const btnGo = $('btn-go-live');
+      if (btnGo) { btnGo.textContent='■ Stop Live'; btnGo.onclick=stopStream; btnGo.className='btn btn-ghost btn-sm'; }
     }
   } catch(e) {
     toast('Stream failed: ' + e.message.substring(0,200), true);
@@ -491,16 +530,22 @@ async function stopStream() {
   const streamId = $('stream-id-input')?.value?.trim() || 'main';
   try {
     await fetch(`${API}/stream/stop?stream_id=${encodeURIComponent(streamId)}`,
-      {method:'POST', credentials:'include', headers:authHeaders()});
+      {method:'POST', headers:authHeaders()});
     toast(`Stream '${streamId}' stopped`);
   } catch(e) { toast('Stop failed: '+e.message, true); }
+  // Reset Go Live button
+  const btnGo = $('btn-go-live');
+  if (btnGo) { btnGo.textContent='▶ Go Live — YouTube / Facebook'; btnGo.onclick=startStream; btnGo.className='btn btn-danger btn-sm'; }
+  // Hide switch cam row
+  const switchRow = $('stream-switch-cam-row');
+  if (switchRow) switchRow.style.display = 'none';
   setTimeout(refreshStreamStatus, 500);
 }
 
 async function stopAllStreams() {
   try {
     await fetch(`${API}/stream/stop?stream_id=all`,
-      {method:'POST', credentials:'include', headers:authHeaders()});
+      {method:'POST', headers:authHeaders()});
     toast('All streams stopped');
     updateStreamBadge(false);
   } catch(e) { toast('Error: '+e.message, true); }
@@ -535,7 +580,7 @@ async function refreshStreamStatus() {
 async function stopStreamById(id) {
   try {
     await fetch(`${API}/stream/stop?stream_id=${encodeURIComponent(id)}`,
-      {method:'POST', credentials:'include', headers:authHeaders()});
+      {method:'POST', headers:authHeaders()});
     toast(`Stream '${id}' stopped`);
     setTimeout(refreshStreamStatus, 500);
   } catch(e) { toast('Error: '+e.message, true); }
@@ -622,18 +667,18 @@ function decisionNotOut(){const el=$('review-decision');if(el){el.textContent='N
 // AI
 async function startAI(){await apiPost('/ai/start',{}).catch(()=>{});$('ai-dot')?.classList.add('on');$('ball-ai-dot')?.classList.add('on');setTxt('ai-status-text','Active — detecting...');setTxt('ball-status-text','Active — tracking ball...');}
 async function stopAI(){await apiPost('/ai/stop',{}).catch(()=>{});$('ai-dot')?.classList.remove('on');$('ball-ai-dot')?.classList.remove('on');setTxt('ai-status-text','Inactive');setTxt('ball-status-text','Tracking inactive');setInner('det-grid','<span style="color:var(--text3);font-size:0.82rem">No detections</span>');}
-async function startPlayerTracking(){try{await fetch(`${API}/ai/player/start`,{method:'POST',credentials:'include',headers:authHeaders()});$('ai-dot')?.classList.add('on');setTxt('ai-status-text','Active — Player Detection');toast('Player detection started');}catch(e){toast('Failed: '+e.message,true);}}
-async function uploadPlayerPhoto(){const input=$('player-photo-input');if(!input?.files[0]){toast('Select a photo first',true);return;}const form=new FormData();form.append('file',input.files[0]);try{const r=await fetch(`${API}/ai/player/upload`,{method:'POST',credentials:'include',headers:token?{'X-Session-Token':token}:{},body:form});const data=await r.json();toast(`Photo uploaded: ${data.file}`);}catch(e){toast('Upload failed: '+e.message,true);}}
-async function setBallType(type){try{await fetch(`${API}/ai/ball/type?ball_type=${type}`,{method:'POST',credentials:'include',headers:authHeaders()});toast(`Ball type: ${type}`);}catch(e){toast('Failed: '+e.message,true);}}
-async function startBallTracking(){try{await fetch(`${API}/ai/ball/start`,{method:'POST',credentials:'include',headers:authHeaders()});$('ball-ai-dot')?.classList.add('on');setTxt('ball-status-text','Active — Ball Detection');toast('Ball detection started');}catch(e){toast('Failed: '+e.message,true);}}
-async function uploadBallImages(){const input=$('ball-img-input');if(!input?.files.length){toast('Select image(s) first',true);return;}let count=0;for(const file of input.files){const form=new FormData();form.append('file',file);await fetch(`${API}/ai/ball/upload`,{method:'POST',credentials:'include',headers:token?{'X-Session-Token':token}:{},body:form}).catch(()=>{});count++;}toast(`${count} image(s) uploaded`);loadSnapshots();}
+async function startPlayerTracking(){try{await fetch(`${API}/ai/player/start`,{method:'POST',headers:authHeaders()});$('ai-dot')?.classList.add('on');setTxt('ai-status-text','Active — Player Detection');toast('Player detection started');}catch(e){toast('Failed: '+e.message,true);}}
+async function uploadPlayerPhoto(){const input=$('player-photo-input');if(!input?.files[0]){toast('Select a photo first',true);return;}const form=new FormData();form.append('file',input.files[0]);try{const r=await fetch(`${API}/ai/player/upload`,{method:'POST',headers:token?{'X-Session-Token':token}:{},body:form});const data=await r.json();toast(`Photo uploaded: ${data.file}`);}catch(e){toast('Upload failed: '+e.message,true);}}
+async function setBallType(type){try{await fetch(`${API}/ai/ball/type?ball_type=${type}`,{method:'POST',headers:authHeaders()});toast(`Ball type: ${type}`);}catch(e){toast('Failed: '+e.message,true);}}
+async function startBallTracking(){try{await fetch(`${API}/ai/ball/start`,{method:'POST',headers:authHeaders()});$('ball-ai-dot')?.classList.add('on');setTxt('ball-status-text','Active — Ball Detection');toast('Ball detection started');}catch(e){toast('Failed: '+e.message,true);}}
+async function uploadBallImages(){const input=$('ball-img-input');if(!input?.files.length){toast('Select image(s) first',true);return;}let count=0;for(const file of input.files){const form=new FormData();form.append('file',file);await fetch(`${API}/ai/ball/upload`,{method:'POST',headers:token?{'X-Session-Token':token}:{},body:form}).catch(()=>{});count++;}toast(`${count} image(s) uploaded`);loadSnapshots();}
 function updateAIDisplay(payload){const dets=payload.detections||[],pan=payload.pan||{};$('ai-dot')?.classList.toggle('on',dets.length>0);$('ball-ai-dot')?.classList.toggle('on',dets.some(d=>d.type==='ball'));setTxt('ai-status-text',dets.length?`Active — ${dets.length} detected`:'Active — scanning...');if(dets.length){setInner('det-grid',dets.map(d=>`<span class="det-chip">${d.type==='ball'?'🏏':'👤'} ${d.type} ${Math.round(d.confidence*100)}%</span>`).join(''));const ball=dets.find(d=>d.type==='ball');if(ball)setTxt('ball-pos',`X:${ball.x} Y:${ball.y} R:${ball.r}`);}if(pan.x!==undefined){setTxt('pan-x',pan.x.toFixed(3));setTxt('pan-y',pan.y.toFixed(3));}}
 async function captureSnapshot(){const data=await apiPost('/ai/snapshot?event=manual',{}).catch(()=>({total:0}));setTxt('snapshot-count',data.total||0);}
 async function loadSnapshots(){try{const d=await apiGet('/ai/snapshots');setTxt('snapshot-count',d.count||0);}catch(e){}}
 async function triggerTraining(){setTxt('training-status','⏳ Training started in background...');await apiPost('/ai/train',{}).catch(()=>{});setTimeout(()=>{setTxt('training-status','✓ Check /models/ for output.');loadModels();},2000);}
 async function loadModels(){try{const data=await apiGet('/ai/models');const el=$('models-list');if(!el)return;if(!data.models?.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">📦</div>No models</div>';return;}el.innerHTML=data.models.map(m=>`<div class="cam-item"><div class="cam-info"><div class="cam-label">📦 ${m}</div></div><div class="cam-actions"><button class="btn btn-xs btn-accent" onclick="loadAIModel('${m}')">Load</button></div></div>`).join('');}catch(e){}}
 async function loadAIModel(name){await apiPost(`/ai/model/load/${name}`,{}).catch(()=>{});toast(`Model '${name}' loaded!`);}
-async function uploadModel(){const input=$('model-file');if(!input?.files[0]){toast('Select a .xml or .onnx file',true);return;}const form=new FormData();form.append('file',input.files[0]);const r=await fetch(`${API}/ai/model/upload`,{method:'POST',credentials:'include',headers:token?{'X-Session-Token':token}:{},body:form});const data=await r.json();toast(`Uploaded: ${data.model}`);loadModels();}
+async function uploadModel(){const input=$('model-file');if(!input?.files[0]){toast('Select a .xml or .onnx file',true);return;}const form=new FormData();form.append('file',input.files[0]);const r=await fetch(`${API}/ai/model/upload`,{method:'POST',headers:token?{'X-Session-Token':token}:{},body:form});const data=await r.json();toast(`Uploaded: ${data.model}`);loadModels();}
 
 // SETTINGS
 async function loadSettings(){try{const data=await apiGet('/settings/');if(data.stream_key&&$('cfg-stream-key'))$('cfg-stream-key').value=data.stream_key;if(data.stream_url&&$('cfg-stream-url'))$('cfg-stream-url').value=data.stream_url;if(data.hotspot_ssid&&$('cfg-ssid'))$('cfg-ssid').value=data.hotspot_ssid;if(data.hotspot_pass&&$('cfg-pass'))$('cfg-pass').value=data.hotspot_pass;if(data.stream_key&&$('st-key'))$('st-key').value=data.stream_key;if(data.stream_url&&$('st-url'))$('st-url').value=data.stream_url;streamSettings.key=data.stream_key||'';streamSettings.url=data.stream_url||'';}catch(e){}}
@@ -642,6 +687,140 @@ async function saveSettings(){await apiPost('/settings/',{stream_key:$('cfg-stre
 // TOAST
 function toast(msg,isError=false){let el=$('toast-container');if(!el){el=document.createElement('div');el.id='toast-container';el.style.cssText='position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px';document.body.appendChild(el);}const t=document.createElement('div');t.style.cssText=`background:${isError?'var(--red)':'var(--green)'};color:#fff;padding:10px 18px;border-radius:8px;font-size:0.85rem;font-family:var(--font-b);box-shadow:0 4px 20px rgba(0,0,0,.4);max-width:320px;animation:slideIn 0.2s ease`;t.textContent=msg;el.appendChild(t);setTimeout(()=>t.remove(),3500);}
 const _s=document.createElement('style');_s.textContent='@keyframes slideIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}';document.head.appendChild(_s);
+
+// ── Dynamic hostname for scoring URLs ────────────────────────────────────
+// Replaces localhost with actual IP so WiFi devices can connect
+function updateIpUrls() {
+  const host = location.hostname;
+  const sports = ['cricket','football','hockey','volleyball','custom'];
+  const overlays = {
+    cricket:'cricket_overlay.html', football:'football_overlay.html',
+    hockey:'hockey_overlay.html', volleyball:'volleyball_overlay.html',
+    custom:'custom_overlay.html'
+  };
+  sports.forEach(sp => {
+    const adminEl = $(`admin-url-${sp}`);
+    const ovrEl   = $(`ovr-url-${sp}`);
+    if (adminEl) adminEl.textContent = 'http://'+host+':8000/admin/'+sp+'.html';
+    if (ovrEl)   ovrEl.textContent   = `http://${host}:8000/overlay/${overlays[sp]}`;
+  });
+}
+
+function openAdmin(sport) {
+  window.open('http://'+location.hostname+':8000/admin/'+sport+'.html', '_blank');
+}
+
+function openOverlay(file) {
+  window.open(`http://${location.hostname}:8000/overlay/${file}`, '_blank');
+}
+
+// ── Local stream preview ──────────────────────────────────────────────────
+let _localStreamRunning = false;
+
+async function toggleLocalStream() {
+  if (_localStreamRunning) {
+    await stopLocalStream();
+  } else {
+    await startLocalStream();
+  }
+}
+
+async function startLocalStream() {
+  const btn = $('btn-local-stream');
+  if (btn) { btn.disabled=true; btn.textContent='Starting...'; }
+  try {
+    const data = await apiPost('/stream/start-local', {});
+    _localStreamRunning = true;
+    const card = $('local-preview-card');
+    if (card) card.style.display = '';
+    // Load HLS via hls.js or native if supported
+    const vid = $('local-stream-video');
+    if (vid) {
+      // Try native HLS (Safari, some mobile) first
+      const hlsUrl = `http://${location.hostname}:8000/hls/stream.m3u8`;
+      if (vid.canPlayType('application/vnd.apple.mpegurl')) {
+        vid.src = hlsUrl;
+        vid.play().catch(() => {});
+      } else {
+        // Load hls.js from CDN
+        if (!window.Hls) {
+          const script = document.createElement('script');
+          script.src = 'https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.4.12/hls.min.js';
+          script.onload = () => _attachHls(vid, hlsUrl);
+          document.head.appendChild(script);
+        } else {
+          _attachHls(vid, hlsUrl);
+        }
+      }
+    }
+    if (btn) { btn.textContent='■ Stop Local'; btn.disabled=false; btn.className='btn btn-warn btn-sm'; }
+    toast('Local preview starting... takes 4-6 seconds to buffer');
+  } catch(e) {
+    if (btn) { btn.textContent='📡 Preview Local'; btn.disabled=false; }
+    toast('Local stream failed: ' + e.message, true);
+  }
+}
+
+function _attachHls(vid, url) {
+  if (window.Hls && Hls.isSupported()) {
+    const hls = new Hls({ enableWorker: false });
+    hls.loadSource(url);
+    hls.attachMedia(vid);
+    hls.on(Hls.Events.MANIFEST_PARSED, () => vid.play().catch(() => {}));
+    vid._hls = hls;
+  }
+}
+
+async function stopLocalStream() {
+  const btn = $('btn-local-stream');
+  try {
+    await apiPost('/stream/stop-local', {});
+    _localStreamRunning = false;
+    const vid = $('local-stream-video');
+    if (vid) {
+      if (vid._hls) { vid._hls.destroy(); vid._hls = null; }
+      vid.src = '';
+    }
+    const card = $('local-preview-card');
+    if (card) card.style.display = 'none';
+    if (btn) { btn.textContent='📡 Preview Local'; btn.className='btn btn-ghost btn-sm'; btn.disabled=false; }
+    toast('Local preview stopped');
+  } catch(e) { toast('Error: '+e.message, true); }
+}
+
+// ── Switch camera during live stream ─────────────────────────────────────
+async function switchStreamCamera() {
+  const sel = $('stream-switch-select');
+  if (!sel || !sel.value) { toast('Select a camera to switch to', true); return; }
+  const url = decodeURIComponent(sel.value);
+  try {
+    // Set as active camera in backend
+    await fetch(`${API}/cameras/activate-url?url=${encodeURIComponent(url)}`,
+      {method:'POST', headers:authHeaders()});
+    toast(`Camera switched to: ${url}\nNew stream will use this camera — restart stream to apply.`);
+  } catch(e) { toast('Switch failed: '+e.message, true); }
+}
+
+// ── Overlay sport selector in streaming tab ───────────────────────────────
+function updateStreamOverlay(sport) {
+  const iframe = $('stream-overlay-iframe');
+  const overlays = {
+    cricket:'cricket_overlay.html', football:'football_overlay.html',
+    hockey:'hockey_overlay.html', volleyball:'volleyball_overlay.html',
+    custom:'custom_overlay.html'
+  };
+  if (iframe && overlays[sport]) {
+    iframe.src = `/overlay/${overlays[sport]}`;
+  }
+}
+
+// ── Raspberry Pi WiFi info ────────────────────────────────────────────────
+// Yes — Raspberry Pi 3/4/5 all have built-in WiFi.
+// When you run the hotspot script, Pi creates its own WiFi network.
+// Devices connect to that WiFi and access:
+//   Main UI:       http://192.168.4.1:3000
+//   API / Overlay: http://192.168.4.1:8000
+// On Windows: use your PC's local IP (run "ipconfig" to find it)
 
 // EXPOSE ALL TO HTML
 window.toggleNav=toggleNav;window.goTo=goTo;
@@ -680,3 +859,10 @@ window.onStreamCamChange  = onStreamCamChange;
 window.stopAllStreams      = stopAllStreams;
 window.stopStreamById     = stopStreamById;
 window.refreshStreamStatus= refreshStreamStatus;
+window.openAdmin           = openAdmin;
+window.openOverlay         = openOverlay;
+window.toggleLocalStream   = toggleLocalStream;
+window.startLocalStream    = startLocalStream;
+window.stopLocalStream     = stopLocalStream;
+window.switchStreamCamera  = switchStreamCamera;
+window.updateStreamOverlay = updateStreamOverlay;

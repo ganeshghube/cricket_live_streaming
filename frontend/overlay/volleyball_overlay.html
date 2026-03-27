@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Volleyball Live Overlay — SportsCaster Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:rgba(0,0,0,0);font-family:'Barlow Condensed',sans-serif;overflow:hidden;height:100vh;width:100vw;}
+.bar{position:absolute;bottom:40px;left:50%;transform:translateX(-50%);width:94%;max-width:1080px;filter:drop-shadow(0 6px 30px rgba(0,0,0,.95));}
+.score-strip{display:flex;height:70px;background:rgba(6,8,18,0.97);border-top:4px solid #a855f7;border-radius:4px 4px 0 0;overflow:hidden;align-items:center;}
+.team{flex:1;display:flex;align-items:center;padding:0 20px;gap:12px;}
+.team.right{flex-direction:row-reverse;}
+.t-name{font-size:21px;font-weight:900;color:#fff;text-transform:uppercase;letter-spacing:2px;}
+.t-sets{font-size:48px;font-weight:900;color:#a855f7;line-height:1;min-width:44px;text-align:center;}
+.t-pts{font-size:28px;font-weight:700;color:#c4b5fd;min-width:36px;text-align:center;}
+.divider{width:1px;height:42px;background:rgba(255,255,255,0.15);}
+.centre{width:200px;flex-shrink:0;text-align:center;}
+.sport-lbl{font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:3px;}
+.set-lbl{font-size:18px;color:#e2e8f0;font-weight:800;margin-top:2px;}
+.cur-pts{font-size:13px;color:#c4b5fd;margin-top:1px;}
+.live-dot{width:7px;height:7px;border-radius:50%;background:#ef4444;display:inline-block;margin-right:5px;animation:pulse 1.5s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.info-strip{background:rgba(0,0,0,.88);border-radius:0 0 4px 4px;border:1px solid rgba(255,255,255,.07);border-top:none;padding:4px 20px;display:flex;gap:20px;font-size:11px;color:#64748b;}
+.info-strip b{color:#a855f7;}
+</style>
+</head>
+<body>
+<div class="bar">
+  <div class="score-strip">
+    <div class="team">
+      <div class="t-sets" id="swA">0</div>
+      <div class="divider"></div>
+      <div class="t-name" id="tA">TEAM A</div>
+    </div>
+    <div class="centre">
+      <div class="sport-lbl"><span class="live-dot"></span>VOLLEYBALL</div>
+      <div class="set-lbl">SET <span id="setNum">1</span></div>
+      <div class="cur-pts"><span id="curA">0</span> — <span id="curB">0</span></div>
+    </div>
+    <div class="team right">
+      <div class="t-name" id="tB">TEAM B</div>
+      <div class="divider"></div>
+      <div class="t-sets" id="swB">0</div>
+    </div>
+  </div>
+  <div class="info-strip">
+    <span>SETS WON: A <b id="swA2">0</b> — B <b id="swB2">0</b></span>
+    <span>Timeouts Remaining: A <b id="toA">2</b> — B <b id="toB">2</b></span>
+  </div>
+</div>
+<script>
+const API = `http://${location.hostname}:8000/api`;
+const G = id => document.getElementById(id);
+async function poll(){
+  try{
+    const r = await fetch(`\${API}/volleyball/state`, {cache:'no-store'});
+    const d = await r.json();
+    if(!d||!d.team_a) return;
+    const sw  = d.sets_won||{a:0,b:0};
+    const cur = (d.set_scores||[{a:0,b:0}])[(d.current_set||1)-1]||{a:0,b:0};
+    G('tA').textContent  = d.team_a.toUpperCase();
+    G('tB').textContent  = d.team_b.toUpperCase();
+    G('swA').textContent = sw.a;  G('swB').textContent = sw.b;
+    G('swA2').textContent= sw.a;  G('swB2').textContent= sw.b;
+    G('setNum').textContent = d.current_set||1;
+    G('curA').textContent   = cur.a;  G('curB').textContent = cur.b;
+    G('toA').textContent    = d.timeouts?.a??2;
+    G('toB').textContent    = d.timeouts?.b??2;
+  }catch(e){}
+}
+poll();
+setInterval(poll, 500);
+(function reconnect(){
+  const ws = new WebSocket(`${location.protocol==='https:'?'wss':'ws'}://${location.hostname}:8000/ws`);
+  ws.onmessage = e => { try{ const m=JSON.parse(e.data); if(m.payload?.sport==='volleyball') poll(); }catch(e){} };
+  ws.onclose = () => setTimeout(reconnect, 3000);
+})();
+</script>
+</body>
+</html>

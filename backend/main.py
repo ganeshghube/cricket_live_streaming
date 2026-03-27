@@ -1,9 +1,9 @@
 """
-SportsCaster Pro v6 — v4 base + v5 additions
-All v4 features intact. Added: sport admin pages, camera detect, storage API,
-AI player/ball detection endpoints, recording disk management.
+SportsCaster Pro — Final
+Single server on port 8000. Serves everything.
+WebSocket declared BEFORE StaticFiles catch-all to prevent AssertionError.
 """
-import asyncio, json, os, logging
+import json, os, logging
 from contextlib import asynccontextmanager
 from datetime import datetime
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
@@ -21,53 +21,59 @@ logging.basicConfig(level=logging.INFO,
 logger = logging.getLogger("sportscaster")
 manager = ConnectionManager()
 
+_BASE = os.path.dirname(os.path.abspath(__file__))
+
+def _abs(rel):
+    return os.path.abspath(os.path.join(_BASE, rel))
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("SportsCaster Pro v6 starting...")
+    logger.info("SportsCaster Pro starting...")
     init_db()
-    for d in ["../recordings","../reviews","../models","../training_data",
-              "../training_data/ball","../training_data/player","../config"]:
-        os.makedirs(d, exist_ok=True)
+    for d in ["../recordings", "../reviews", "../models", "../training_data",
+              "../training_data/ball", "../training_data/player", "../config", "../hls"]:
+        os.makedirs(_abs(d), exist_ok=True)
     app.state.manager = manager
     yield
     logger.info("Shutdown.")
 
-app = FastAPI(title="SportsCaster Pro", version="6.0.0", lifespan=lifespan)
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True,
-                   allow_methods=["*"], allow_headers=["*"])
 
-# ── Routers ───────────────────────────────────────────────────────────────
-app.include_router(auth.router,         prefix="/api/auth",      tags=["auth"])
-app.include_router(scoring.router,      prefix="/api/scoring",   tags=["scoring"])
-app.include_router(streaming.router,    prefix="/api/stream",    tags=["streaming"])
-app.include_router(recording.router,    prefix="/api/recording", tags=["recording"])
-app.include_router(ai_tracking.router,  prefix="/api/ai",        tags=["ai"])
-app.include_router(review.router,       prefix="/api/review",    tags=["review"])
-app.include_router(cameras.router,      prefix="/api/cameras",   tags=["cameras"])
-app.include_router(settings.router,     prefix="/api/settings",  tags=["settings"])
-app.include_router(cricket_api.router,  prefix="/api",           tags=["cricket"])
-app.include_router(sports_api.router,   prefix="/api",           tags=["sports"])   # NEW
+app = FastAPI(title="SportsCaster Pro", version="21.0.0", lifespan=lifespan)
 
-# ── Static mounts ─────────────────────────────────────────────────────────
-for mount, directory in [
-    ("/overlay",    "../overlay"),
-    ("/recordings", "../recordings"),
-    ("/reviews",    "../reviews"),
-]:
-    os.makedirs(directory, exist_ok=True)
-    app.mount(mount, StaticFiles(directory=directory), name=mount.strip("/"))
+# CORS: allow_origins=["*"] + allow_credentials=False is valid for all browsers
+# Tokens sent via X-Session-Token header — no cookies needed
+app.add_middleware(CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"])
 
-# Serve /admin/ sport pages  (NEW)
-admin_path = os.path.join(os.path.dirname(__file__), "..", "frontend", "admin")
-os.makedirs(admin_path, exist_ok=True)
-app.mount("/admin", StaticFiles(directory=admin_path, html=True), name="admin")
-
-# Frontend (must be last)
-frontend_path = os.path.join(os.path.dirname(__file__), "..", "frontend")
-if os.path.exists(frontend_path):
-    app.mount("/", StaticFiles(directory=frontend_path, html=True), name="frontend")
+# ── API routers FIRST ────────────────────────────────────────────────────
+app.include_router(auth.router,        prefix="/api/auth",      tags=["auth"])
+app.include_router(scoring.router,     prefix="/api/scoring",   tags=["scoring"])
+app.include_router(streaming.router,   prefix="/api/stream",    tags=["streaming"])
+app.include_router(recording.router,   prefix="/api/recording", tags=["recording"])
+app.include_router(ai_tracking.router, prefix="/api/ai",        tags=["ai"])
+app.include_router(review.router,      prefix="/api/review",    tags=["review"])
+app.include_router(cameras.router,     prefix="/api/cameras",   tags=["cameras"])
+app.include_router(settings.router,    prefix="/api/settings",  tags=["settings"])
+app.include_router(cricket_api.router, prefix="/api",           tags=["cricket"])
+app.include_router(sports_api.router,  prefix="/api",           tags=["sports"])
 
 
+@app.get("/health")
+async def health():
+    return {"status": "ok", "version": "21.0.0", "time": datetime.utcnow().isoformat()}
+
+@app.get("/api/state")
+async def get_state():
+    return app_state
+
+
+# ── WebSocket BEFORE StaticFiles ─────────────────────────────────────────
+# StaticFiles(html=True) at "/" intercepts everything including WS upgrades.
+# Declaring @app.websocket("/ws") first ensures WS is matched before StaticFiles.
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await manager.connect(websocket)
@@ -80,7 +86,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 "recording_status": app_state.get("recording_status", "idle"),
                 "camera_source":    app_state.get("camera_source", ""),
                 "active_sport":     app_state.get("active_sport", "cricket"),
-                "ui":               app_state.get("ui", {"scorebar":True,"scorecard":False}),
+                "ui":               app_state.get("ui", {"scorebar": True, "scorecard": False}),
             }
         }))
     except Exception:
@@ -89,41 +95,51 @@ async def websocket_endpoint(websocket: WebSocket):
     try:
         while True:
             data = await websocket.receive_text()
-            try: msg = json.loads(data)
-            except: continue
-            mtype = msg.get("type","")
+            try:
+                msg = json.loads(data)
+            except Exception:
+                continue
+            mtype = msg.get("type", "")
 
             if mtype == "CRICKET_UPDATE":
-                state = msg.get("payload",{})
+                state = msg.get("payload", {})
                 if not state.get("reset"):
                     app_state["score"]        = state
-                    app_state["active_sport"] = state.get("sport","cricket")
+                    app_state["active_sport"] = state.get("sport", "cricket")
                 await manager.broadcast(msg)
             elif mtype == "UI_UPDATE":
-                patch = msg.get("payload",{})
-                app_state.setdefault("ui",{"scorebar":True,"scorecard":False})
+                patch = msg.get("payload", {})
+                app_state.setdefault("ui", {"scorebar": True, "scorecard": False})
                 app_state["ui"].update(patch)
                 await manager.broadcast(msg)
             elif mtype == "GET_STATE":
                 try:
                     await websocket.send_text(json.dumps({
-                        "type":"INIT",
-                        "payload":{
-                            "score": app_state.get("score",{}),
-                            "ui":    app_state.get("ui",{"scorebar":True,"scorecard":False}),
+                        "type": "INIT",
+                        "payload": {
+                            "score": app_state.get("score", {}),
+                            "ui":    app_state.get("ui", {"scorebar": True, "scorecard": False}),
                         }
                     }))
-                except: pass
+                except Exception:
+                    pass
             else:
                 await manager.broadcast(msg)
     except WebSocketDisconnect:
         manager.disconnect(websocket)
 
 
-@app.get("/health")
-async def health():
-    return {"status":"ok","version":"6.0.0","time":datetime.utcnow().isoformat()}
+# ── Static mounts AFTER all routes ───────────────────────────────────────
+for mount, rel in [("/overlay", "../overlay"), ("/recordings", "../recordings"),
+                   ("/reviews", "../reviews"), ("/hls", "../hls")]:
+    d = _abs(rel)
+    os.makedirs(d, exist_ok=True)
+    app.mount(mount, StaticFiles(directory=d), name=mount.strip("/"))
 
-@app.get("/api/state")
-async def get_state():
-    return app_state
+admin_dir = _abs("../frontend/admin")
+os.makedirs(admin_dir, exist_ok=True)
+app.mount("/admin", StaticFiles(directory=admin_dir, html=True), name="admin")
+
+frontend_dir = _abs("../frontend")
+if os.path.isdir(frontend_dir):
+    app.mount("/", StaticFiles(directory=frontend_dir, html=True), name="frontend")

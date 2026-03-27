@@ -1,25 +1,26 @@
 """
-SportsCaster Pro - Auth Router
-FIX: Session persists across browser refresh via localStorage token + DB-persisted sessions.
+SportsCaster Pro - Auth Router (Final)
+Token returned in JSON, stored in localStorage, sent via X-Session-Token header.
+No cookies — works from any IP, any port, no CORS issues.
 """
 import secrets, logging
-from fastapi import APIRouter, HTTPException, Response, Request, status
+from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from services.db import get_conn
 
 router = APIRouter()
 logger = logging.getLogger("sportscaster.auth")
-SESSIONS: dict = {}   # token -> username (also persisted to DB)
+SESSIONS: dict = {}
 
 
 def _load_sessions():
     try:
         conn = get_conn()
-        rows = conn.execute("SELECT token, username FROM sessions").fetchall()
-        conn.close()
-        for r in rows:
+        for r in conn.execute("SELECT token, username FROM sessions").fetchall():
             SESSIONS[r["token"]] = r["username"]
-        logger.info(f"Loaded {len(SESSIONS)} persisted sessions")
+        conn.close()
+        logger.info(f"Loaded {len(SESSIONS)} sessions")
     except Exception:
         pass
 
@@ -43,56 +44,72 @@ def _del_session(token):
         pass
 
 
-class LoginReq(BaseModel):
-    username: str
-    password: str
-
-
 def get_token(request: Request):
-    t = request.cookies.get("session")
-    if t: return t
-    t = request.headers.get("X-Session-Token")
-    if t: return t
-    a = request.headers.get("Authorization","")
-    if a.startswith("Bearer "): return a[7:]
+    t = request.headers.get("X-Session-Token", "").strip()
+    if t and t in SESSIONS: return t
+    auth = request.headers.get("Authorization", "")
+    if auth.startswith("Bearer "):
+        t = auth[7:].strip()
+        if t and t in SESSIONS: return t
+    # Also accept cookie for backward compat
+    t = request.cookies.get("session", "").strip()
+    if t and t in SESSIONS: return t
     return None
 
 
 def require_auth(request: Request):
     t = get_token(request)
-    if not t or t not in SESSIONS:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Not authenticated")
+    if not t:
+        raise HTTPException(401, "Not authenticated")
     return SESSIONS[t]
 
 
+class LoginReq(BaseModel):
+    username: str
+    password: str
+
+
 @router.post("/login")
-async def login(req: LoginReq, response: Response):
-    conn = get_conn()
-    row = conn.execute("SELECT * FROM users WHERE username=? AND password=?",
-                       (req.username, req.password)).fetchone()
-    conn.close()
-    if not row: raise HTTPException(401, "Invalid credentials")
-    token = secrets.token_hex(24)
-    SESSIONS[token] = req.username
-    _save_session(token, req.username)
-    response.set_cookie("session", token, httponly=True, samesite="lax", max_age=86400*7)
-    logger.info(f"Login OK: {req.username}")
-    return {"token": token, "username": req.username}
+async def login(req: LoginReq):
+    username = (req.username or "").strip()
+    password = (req.password or "").strip()
+    if not username or not password:
+        raise HTTPException(400, "Username and password required")
+    try:
+        conn = get_conn()
+        row = conn.execute(
+            "SELECT username FROM users WHERE username=? AND password=?",
+            (username, password)
+        ).fetchone()
+        conn.close()
+    except Exception as e:
+        logger.error(f"DB error: {e}")
+        raise HTTPException(500, f"Database error: {e}")
+
+    if not row:
+        logger.warning(f"Failed login: {username}")
+        raise HTTPException(401, "Invalid username or password")
+
+    token = secrets.token_hex(32)
+    SESSIONS[token] = username
+    _save_session(token, username)
+    logger.info(f"Login OK: {username}")
+    # Return token in body — frontend stores in localStorage
+    return JSONResponse({"ok": True, "token": token, "username": username})
 
 
 @router.post("/logout")
-async def logout(request: Request, response: Response):
-    t = get_token(request)
+async def logout(request: Request):
+    t = request.headers.get("X-Session-Token", "") or request.cookies.get("session", "")
     if t: _del_session(t)
-    response.delete_cookie("session")
-    return {"ok": True}
+    return JSONResponse({"ok": True})
 
 
 @router.get("/me")
 async def me(request: Request):
     t = get_token(request)
-    if not t or t not in SESSIONS: raise HTTPException(401, "Not authenticated")
-    return {"username": SESSIONS[t], "token": t}
+    if not t: raise HTTPException(401, "Not authenticated")
+    return JSONResponse({"ok": True, "username": SESSIONS[t], "token": t})
 
 
 _load_sessions()

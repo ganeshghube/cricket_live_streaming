@@ -401,7 +401,6 @@ label.field-label{display:block;font-size:0.72rem;text-transform:uppercase;lette
         <div class="sub-nav" id="sub-camera">
           <div class="sub-item" onclick="goTo('camera','usb')">USB Camera</div>
           <div class="sub-item" onclick="goTo('camera','ip')">IP Camera</div>
-          <div class="sub-item" onclick="goTo('camera','mobile')">Mobile Camera</div>
           <div class="sub-item" onclick="goTo('camera','saved')">Saved Sources</div>
         </div>
 
@@ -487,26 +486,26 @@ label.field-label{display:block;font-size:0.72rem;text-transform:uppercase;lette
                 <div class="subpage" id="sp-scoring-cricket">
           <div style="display:flex;flex-direction:column;gap:14px">
             <!-- Two large link cards -->
-            <a href="http://localhost:3000/admin/cricket.html" target="_blank" style="text-decoration:none">
+            <div onclick="openAdmin('cricket')" style="text-decoration:none;cursor:pointer">
               <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:24px 20px;display:flex;align-items:center;gap:18px;cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
                 <div style="font-size:2.4rem;flex-shrink:0">🏏</div>
                 <div>
                   <div style="font-family:var(--font-h);font-size:1.05rem;font-weight:700;color:var(--text);letter-spacing:.5px">Cricket Admin Scoring</div>
-                  <div style="font-size:0.78rem;color:var(--text3);margin-top:3px">http://localhost:3000/admin/cricket.html</div>
+                  <div id="admin-url-cricket" style="font-size:0.78rem;color:var(--text3);margin-top:3px">http://[your-ip]:8000/admin/cricket.html</div>
                   <div style="font-size:0.72rem;color:var(--accent);margin-top:6px;display:flex;align-items:center;gap:4px">Open full scoring admin ↗</div>
                 </div>
               </div>
-            </a>
-            <a href="http://localhost:8000/overlay/cricket_overlay.html" target="_blank" style="text-decoration:none">
+            </div>
+            <div onclick="openOverlay('cricket_overlay.html')" style="text-decoration:none;cursor:pointer">
               <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:24px 20px;display:flex;align-items:center;gap:18px;cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='#f5c518'" onmouseout="this.style.borderColor='var(--border)'">
                 <div style="font-size:2.4rem;flex-shrink:0">📺</div>
                 <div>
                   <div style="font-family:var(--font-h);font-size:1.05rem;font-weight:700;color:var(--text);letter-spacing:.5px">Scoring Overlay Page</div>
-                  <div style="font-size:0.78rem;color:var(--text3);margin-top:3px">http://localhost:8000/overlay/cricket_overlay.html</div>
+                  <div id="ovr-url-cricket" style="font-size:0.78rem;color:var(--text3);margin-top:3px">http://[your-ip]:8000/overlay/cricket_overlay.html</div>
                   <div style="font-size:0.72rem;margin-top:6px;display:flex;align-items:center;gap:4px" style="color:#f5c518">Open broadcast overlay ↗</div>
                 </div>
               </div>
-            </a>
+            </div>
             <!-- Quick info card -->
             <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r2);padding:14px 16px">
               <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:8px">Quick guide</div>
@@ -523,26 +522,26 @@ label.field-label{display:block;font-size:0.72rem;text-transform:uppercase;lette
                 <div class="subpage" id="sp-scoring-football">
           <div style="display:flex;flex-direction:column;gap:14px">
             <!-- Two large link cards -->
-            <a href="http://localhost:3000/admin/football.html" target="_blank" style="text-decoration:none">
+            <div onclick="openAdmin('football')" style="text-decoration:none;cursor:pointer">
               <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:24px 20px;display:flex;align-items:center;gap:18px;cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
                 <div style="font-size:2.4rem;flex-shrink:0">⚽</div>
                 <div>
                   <div style="font-family:var(--font-h);font-size:1.05rem;font-weight:700;color:var(--text);letter-spacing:.5px">Football Admin Scoring</div>
-                  <div style="font-size:0.78rem;color:var(--text3);margin-top:3px">http://localhost:3000/admin/football.html</div>
+                  <div id="admin-url-football" style="font-size:0.78rem;color:var(--text3);margin-top:3px">http://[your-ip]:8000/admin/football.html</div>
                   <div style="font-size:0.72rem;color:var(--accent);margin-top:6px;display:flex;align-items:center;gap:4px">Open full scoring admin ↗</div>
                 </div>
               </div>
-            </a>
-            <a href="http://localhost:8000/overlay/football_overlay.html" target="_blank" style="text-decoration:none">
+            </div>
+            <div onclick="openOverlay('football_overlay.html')" style="text-decoration:none;cursor:pointer">
               <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:24px 20px;display:flex;align-items:center;gap:18px;cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='#3b82f6'" onmouseout="this.style.borderColor='var(--border)'">
                 <div style="font-size:2.4rem;flex-shrink:0">📺</div>
                 <div>
                   <div style="font-family:var(--font-h);font-size:1.05rem;font-weight:700;color:var(--text);letter-spacing:.5px">Scoring Overlay Page</div>
-                  <div style="font-size:0.78rem;color:var(--text3);margin-top:3px">http://localhost:8000/overlay/football_overlay.html</div>
+                  <div id="ovr-url-football" style="font-size:0.78rem;color:var(--text3);margin-top:3px">http://[your-ip]:8000/overlay/football_overlay.html</div>
                   <div style="font-size:0.72rem;margin-top:6px;display:flex;align-items:center;gap:4px" style="color:#3b82f6">Open broadcast overlay ↗</div>
                 </div>
               </div>
-            </a>
+            </div>
             <!-- Quick info card -->
             <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r2);padding:14px 16px">
               <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:8px">Quick guide</div>
@@ -559,26 +558,26 @@ label.field-label{display:block;font-size:0.72rem;text-transform:uppercase;lette
                 <div class="subpage" id="sp-scoring-hockey">
           <div style="display:flex;flex-direction:column;gap:14px">
             <!-- Two large link cards -->
-            <a href="http://localhost:3000/admin/hockey.html" target="_blank" style="text-decoration:none">
+            <div onclick="openAdmin('hockey')" style="text-decoration:none;cursor:pointer">
               <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:24px 20px;display:flex;align-items:center;gap:18px;cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
                 <div style="font-size:2.4rem;flex-shrink:0">🏑</div>
                 <div>
                   <div style="font-family:var(--font-h);font-size:1.05rem;font-weight:700;color:var(--text);letter-spacing:.5px">Hockey Admin Scoring</div>
-                  <div style="font-size:0.78rem;color:var(--text3);margin-top:3px">http://localhost:3000/admin/hockey.html</div>
+                  <div id="admin-url-hockey" style="font-size:0.78rem;color:var(--text3);margin-top:3px">http://[your-ip]:8000/admin/hockey.html</div>
                   <div style="font-size:0.72rem;color:var(--accent);margin-top:6px;display:flex;align-items:center;gap:4px">Open full scoring admin ↗</div>
                 </div>
               </div>
-            </a>
-            <a href="http://localhost:8000/overlay/hockey_overlay.html" target="_blank" style="text-decoration:none">
+            </div>
+            <div onclick="openOverlay('hockey_overlay.html')" style="text-decoration:none;cursor:pointer">
               <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:24px 20px;display:flex;align-items:center;gap:18px;cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='#06b6d4'" onmouseout="this.style.borderColor='var(--border)'">
                 <div style="font-size:2.4rem;flex-shrink:0">📺</div>
                 <div>
                   <div style="font-family:var(--font-h);font-size:1.05rem;font-weight:700;color:var(--text);letter-spacing:.5px">Scoring Overlay Page</div>
-                  <div style="font-size:0.78rem;color:var(--text3);margin-top:3px">http://localhost:8000/overlay/hockey_overlay.html</div>
+                  <div id="ovr-url-hockey" style="font-size:0.78rem;color:var(--text3);margin-top:3px">http://[your-ip]:8000/overlay/hockey_overlay.html</div>
                   <div style="font-size:0.72rem;margin-top:6px;display:flex;align-items:center;gap:4px" style="color:#06b6d4">Open broadcast overlay ↗</div>
                 </div>
               </div>
-            </a>
+            </div>
             <!-- Quick info card -->
             <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r2);padding:14px 16px">
               <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:8px">Quick guide</div>
@@ -595,26 +594,26 @@ label.field-label{display:block;font-size:0.72rem;text-transform:uppercase;lette
                 <div class="subpage" id="sp-scoring-volleyball">
           <div style="display:flex;flex-direction:column;gap:14px">
             <!-- Two large link cards -->
-            <a href="http://localhost:3000/admin/volleyball.html" target="_blank" style="text-decoration:none">
+            <div onclick="openAdmin('volleyball')" style="text-decoration:none;cursor:pointer">
               <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:24px 20px;display:flex;align-items:center;gap:18px;cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
                 <div style="font-size:2.4rem;flex-shrink:0">🏐</div>
                 <div>
                   <div style="font-family:var(--font-h);font-size:1.05rem;font-weight:700;color:var(--text);letter-spacing:.5px">Volleyball Admin Scoring</div>
-                  <div style="font-size:0.78rem;color:var(--text3);margin-top:3px">http://localhost:3000/admin/volleyball.html</div>
+                  <div id="admin-url-volleyball" style="font-size:0.78rem;color:var(--text3);margin-top:3px">http://[your-ip]:8000/admin/volleyball.html</div>
                   <div style="font-size:0.72rem;color:var(--accent);margin-top:6px;display:flex;align-items:center;gap:4px">Open full scoring admin ↗</div>
                 </div>
               </div>
-            </a>
-            <a href="http://localhost:8000/overlay/volleyball_overlay.html" target="_blank" style="text-decoration:none">
+            </div>
+            <div onclick="openOverlay('volleyball_overlay.html')" style="text-decoration:none;cursor:pointer">
               <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:24px 20px;display:flex;align-items:center;gap:18px;cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='#a855f7'" onmouseout="this.style.borderColor='var(--border)'">
                 <div style="font-size:2.4rem;flex-shrink:0">📺</div>
                 <div>
                   <div style="font-family:var(--font-h);font-size:1.05rem;font-weight:700;color:var(--text);letter-spacing:.5px">Scoring Overlay Page</div>
-                  <div style="font-size:0.78rem;color:var(--text3);margin-top:3px">http://localhost:8000/overlay/volleyball_overlay.html</div>
+                  <div id="ovr-url-volleyball" style="font-size:0.78rem;color:var(--text3);margin-top:3px">http://[your-ip]:8000/overlay/volleyball_overlay.html</div>
                   <div style="font-size:0.72rem;margin-top:6px;display:flex;align-items:center;gap:4px" style="color:#a855f7">Open broadcast overlay ↗</div>
                 </div>
               </div>
-            </a>
+            </div>
             <!-- Quick info card -->
             <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r2);padding:14px 16px">
               <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:8px">Quick guide</div>
@@ -631,26 +630,26 @@ label.field-label{display:block;font-size:0.72rem;text-transform:uppercase;lette
                 <div class="subpage" id="sp-scoring-custom">
           <div style="display:flex;flex-direction:column;gap:14px">
             <!-- Two large link cards -->
-            <a href="http://localhost:3000/admin/custom.html" target="_blank" style="text-decoration:none">
+            <div onclick="openAdmin('custom')" style="text-decoration:none;cursor:pointer">
               <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:24px 20px;display:flex;align-items:center;gap:18px;cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
                 <div style="font-size:2.4rem;flex-shrink:0">🎯</div>
                 <div>
                   <div style="font-family:var(--font-h);font-size:1.05rem;font-weight:700;color:var(--text);letter-spacing:.5px">Custom Admin Scoring</div>
-                  <div style="font-size:0.78rem;color:var(--text3);margin-top:3px">http://localhost:3000/admin/custom.html</div>
+                  <div id="admin-url-custom" style="font-size:0.78rem;color:var(--text3);margin-top:3px">http://[your-ip]:8000/admin/custom.html</div>
                   <div style="font-size:0.72rem;color:var(--accent);margin-top:6px;display:flex;align-items:center;gap:4px">Open full scoring admin ↗</div>
                 </div>
               </div>
-            </a>
-            <a href="http://localhost:8000/overlay/custom_overlay.html" target="_blank" style="text-decoration:none">
+            </div>
+            <div onclick="openOverlay('custom_overlay.html')" style="text-decoration:none;cursor:pointer">
               <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:24px 20px;display:flex;align-items:center;gap:18px;cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='#f97316'" onmouseout="this.style.borderColor='var(--border)'">
                 <div style="font-size:2.4rem;flex-shrink:0">📺</div>
                 <div>
                   <div style="font-family:var(--font-h);font-size:1.05rem;font-weight:700;color:var(--text);letter-spacing:.5px">Scoring Overlay Page</div>
-                  <div style="font-size:0.78rem;color:var(--text3);margin-top:3px">http://localhost:8000/overlay/custom_overlay.html</div>
+                  <div id="ovr-url-custom" style="font-size:0.78rem;color:var(--text3);margin-top:3px">http://[your-ip]:8000/overlay/custom_overlay.html</div>
                   <div style="font-size:0.72rem;margin-top:6px;display:flex;align-items:center;gap:4px" style="color:#f97316">Open broadcast overlay ↗</div>
                 </div>
               </div>
-            </a>
+            </div>
             <!-- Quick info card -->
             <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r2);padding:14px 16px">
               <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:8px">Quick guide</div>
@@ -732,34 +731,6 @@ label.field-label{display:block;font-size:0.72rem;text-transform:uppercase;lette
           </div>
         </div>
 
-        <!-- Mobile Camera -->
-        <div class="subpage" id="sp-camera-mobile">
-          <div class="card">
-            <div class="card-title">Mobile Camera (IP Webcam)</div>
-            <div style="background:var(--surface2);border-radius:var(--r);padding:14px;margin-bottom:14px;font-size:0.85rem;color:var(--text2);line-height:1.7">
-              1. Install <strong>IP Webcam</strong> app on Android<br>
-              2. Tap <strong>Start Server</strong><br>
-              3. Note the IP shown (e.g. 192.168.4.2:8080)<br>
-              4. Enter URL below
-            </div>
-            <div class="col">
-              <div><label class="field-label">Phone IP:Port</label>
-                <input id="mobile-url" placeholder="http://192.168.4.2:8080/video"/>
-              </div>
-              <div class="row">
-                <button class="btn btn-ghost btn-sm" onclick="previewMobile()">👁 Preview</button>
-                <button class="btn btn-accent btn-sm" onclick="saveMobileCam()">💾 Save & Set Active</button>
-              </div>
-            </div>
-          </div>
-          <div class="card">
-            <div class="card-title">Preview</div>
-            <div class="preview-wrap" id="mobile-preview-wrap">
-              <span class="preview-label">MOBILE CAM</span>
-              <div class="preview-err">📱<br>Enter phone URL and click Preview</div>
-            </div>
-          </div>
-        </div>
 
         <!-- Saved Sources -->
         <div class="subpage" id="sp-camera-saved">
@@ -828,64 +799,114 @@ label.field-label{display:block;font-size:0.72rem;text-transform:uppercase;lette
 
         <!-- Live Stream -->
                 <div class="subpage" id="sp-streaming-live">
-          <!-- Camera source selector: all sources -->
+
+          <!-- Camera source + Go Live — compact single card -->
           <div class="card">
-            <div class="card-title">Camera Source for Stream</div>
+            <div class="card-title">Camera &amp; Stream</div>
             <div class="col">
-              <div style="display:flex;gap:8px">
-                <select id="stream-cam-select" style="flex:1" onchange="onStreamCamChange(this.value)">
+              <!-- Camera selector row -->
+              <div style="display:flex;gap:6px">
+                <select id="stream-cam-select" style="flex:1;font-size:0.82rem" onchange="onStreamCamChange(this.value)">
                   <option value="">Select camera source...</option>
                 </select>
-                <button class="btn btn-ghost btn-xs" onclick="loadAllStreamSources()" style="white-space:nowrap;padding:6px 10px">🔍 Detect</button>
+                <button class="btn btn-ghost btn-xs" onclick="loadAllStreamSources()" style="padding:6px 8px">🔍</button>
+                <button class="btn btn-accent btn-xs" onclick="applyStreamCamera()">✓ Use</button>
               </div>
               <div id="stream-cam-custom-row" style="display:none">
-                <label class="field-label">Camera URL (RTSP / HTTP / RTSP)</label>
-                <input id="stream-cam-custom-url" placeholder="rtsp://192.168.1.x/stream or http://ip:8080/video"/>
+                <input id="stream-cam-custom-url" placeholder="http://ip:8080/video or rtsp://..." style="font-size:0.82rem"/>
               </div>
-              <div id="stream-devices-info" style="font-size:0.78rem;color:var(--text3)">Click Detect to list all cameras</div>
-              <button class="btn btn-accent btn-sm" onclick="applyStreamCamera()">✓ Set This Camera for Stream</button>
-              <div id="stream-active-camera" style="font-size:0.78rem;color:var(--green)"></div>
+              <div id="stream-devices-info" style="font-size:0.74rem;color:var(--text3)">Click 🔍 to detect cameras</div>
+              <div id="stream-active-camera" style="font-size:0.74rem;color:var(--green)"></div>
+
+              <!-- Camera switch while live -->
+              <div id="stream-switch-cam-row" style="display:none;padding-top:6px;border-top:1px solid var(--border);margin-top:4px">
+                <div style="font-size:0.74rem;color:var(--yellow);margin-bottom:4px">🔄 Switch camera while streaming:</div>
+                <div style="display:flex;gap:6px">
+                  <select id="stream-switch-select" style="flex:1;font-size:0.82rem"></select>
+                  <button class="btn btn-warn btn-xs" onclick="switchStreamCamera()">Switch</button>
+                </div>
+              </div>
+
+              <!-- Go Live / Stop Live — same button toggles -->
+              <div style="display:flex;gap:6px;margin-top:4px">
+                <button class="btn btn-danger btn-sm" id="btn-go-live" onclick="startStream()" style="flex:1">▶ Go Live — YouTube / Facebook</button>
+                <button class="btn btn-ghost btn-sm" id="btn-local-stream" onclick="toggleLocalStream()" style="flex:0 0 auto">📡 Preview Local</button>
+              </div>
+
+              <!-- Status row -->
+              <div style="display:flex;align-items:center;gap:8px">
+                <span class="badge badge-idle" id="stream-badge">● Idle</span>
+                <span id="stream-platform-display" style="font-size:0.74rem;color:var(--text3)"></span>
+              </div>
             </div>
           </div>
 
-          <!-- Stream control with multi-stream support -->
-          <div class="card">
-            <div class="card-title">Stream Control</div>
-            <div class="status-row">
-              <span class="badge badge-idle" id="stream-badge">● Idle</span>
-              <span id="stream-platform-display" style="color:var(--text3);font-size:0.82rem"></span>
+          <!-- Local stream preview (HLS in-browser) -->
+          <div class="card" id="local-preview-card" style="display:none">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+              <div class="card-title" style="margin-bottom:0">📡 Local Stream Preview</div>
+              <button class="btn btn-ghost btn-xs" onclick="stopLocalStream()">■ Stop</button>
             </div>
-            <div style="margin-bottom:10px">
-              <label class="field-label">Stream ID — use unique IDs to stream multiple cameras at once</label>
-              <input id="stream-id-input" value="main" placeholder="main" style="max-width:200px"/>
+            <video id="local-stream-video" controls autoplay muted
+              style="width:100%;border-radius:var(--r);background:#000;max-height:280px"
+              playsinline>
+            </video>
+            <div style="margin-top:8px;font-size:0.74rem;color:var(--text3)">
+              Local preview uses HLS. Takes 4–6 seconds to buffer.
             </div>
-            <div class="big-action-row" style="margin-bottom:8px">
-              <button class="btn btn-danger" id="btn-go-live" onclick="startStream()">▶ Go Live</button>
-              <button class="btn btn-ghost" id="btn-stop-live" onclick="stopStream()">■ Stop Stream</button>
-            </div>
-            <button class="btn btn-warn btn-sm" onclick="stopAllStreams()" style="width:100%;margin-bottom:8px">■ Stop ALL Streams</button>
-            <div style="font-size:0.78rem;color:var(--text3)">
-              Configure RTMP key in RTMP Settings tab.<br>
-              To stream a 2nd camera simultaneously: change the Stream ID, select camera, click Go Live.
+            <!-- Send local stream to YouTube -->
+            <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+              <div style="font-size:0.78rem;color:var(--text2);margin-bottom:6px;font-weight:600">📤 Send to YouTube / Facebook</div>
+              <button class="btn btn-danger btn-sm" style="width:100%" onclick="startStream()">▶ Go Live on YouTube / Facebook</button>
             </div>
           </div>
 
-          <!-- Live active streams dashboard -->
+          <!-- Scoring overlay preview during stream -->
           <div class="card">
-            <div class="card-title">Active Streams <button class="btn btn-ghost btn-xs" style="margin-left:8px" onclick="refreshStreamStatus()">🔄 Refresh</button></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+              <div class="card-title" style="margin-bottom:0">🏆 Scoring Overlay</div>
+              <select id="stream-overlay-sport" onchange="updateStreamOverlay(this.value)" style="font-size:0.78rem;padding:4px 6px;max-width:120px">
+                <option value="cricket">🏏 Cricket</option>
+                <option value="football">⚽ Football</option>
+                <option value="hockey">🏑 Hockey</option>
+                <option value="volleyball">🏐 Volleyball</option>
+                <option value="custom">🎯 Custom</option>
+              </select>
+            </div>
+            <div style="position:relative;background:#000;border-radius:var(--r);overflow:hidden;padding-top:56.25%">
+              <iframe id="stream-overlay-iframe" src="/overlay/cricket_overlay.html"
+                style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;pointer-events:none;background:rgba(0,0,0,0)">
+              </iframe>
+            </div>
+            <div style="font-size:0.72rem;color:var(--text3);margin-top:6px">
+              This overlay updates live as you score. Add it to OBS as a Browser Source.
+            </div>
+          </div>
+
+          <!-- Active streams dashboard -->
+          <div class="card">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+              <div class="card-title" style="margin-bottom:0">Active Streams</div>
+              <div style="display:flex;gap:6px">
+                <button class="btn btn-ghost btn-xs" onclick="refreshStreamStatus()">🔄</button>
+                <button class="btn btn-warn btn-xs" onclick="stopAllStreams()">■ Stop All</button>
+              </div>
+            </div>
             <div id="active-streams-list">
               <div style="font-size:0.82rem;color:var(--text3)">No active streams</div>
             </div>
           </div>
 
-          <!-- FFmpeg debug log -->
+          <!-- FFmpeg log -->
           <div class="card">
-            <div class="card-title">FFmpeg Debug Log <button class="btn btn-ghost btn-xs" style="margin-left:8px" onclick="loadStreamLog()">🔄 Refresh</button></div>
-            <div style="margin-bottom:6px;display:flex;gap:8px;align-items:center">
-              <label class="field-label" style="margin:0">Stream ID:</label>
-              <input id="log-stream-id" value="main" style="max-width:100px;padding:4px 8px;font-size:0.82rem"/>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+              <div class="card-title" style="margin-bottom:0">FFmpeg Log</div>
+              <div style="display:flex;gap:6px;align-items:center">
+                <input id="log-stream-id" value="main" style="max-width:70px;padding:3px 6px;font-size:0.75rem"/>
+                <button class="btn btn-ghost btn-xs" onclick="loadStreamLog()">🔄</button>
+              </div>
             </div>
-            <pre id="stream-log-output" style="font-size:0.72rem;color:var(--text3);max-height:160px;overflow-y:auto;white-space:pre-wrap;background:var(--bg);border-radius:6px;padding:10px">No log yet.</pre>
+            <pre id="stream-log-output" style="font-size:0.70rem;color:var(--text3);max-height:140px;overflow-y:auto;white-space:pre-wrap;background:var(--bg);border-radius:6px;padding:8px">No log yet.</pre>
           </div>
         </div>
 
@@ -1231,7 +1252,7 @@ label.field-label{display:block;font-size:0.72rem;text-transform:uppercase;lette
             <div class="card-title">System</div>
             <div style="font-size:0.85rem;color:var(--text2);line-height:2">
               Version: <strong>SportsCaster Pro v11.0</strong><br>
-              API: <a href="http://localhost:8000/docs" target="_blank" style="color:var(--accent)">localhost:8000/docs</a><br>
+              API: <a onclick="window.open('http://'+location.hostname+':8000/docs')" style="cursor:pointer" target="_blank" style="color:var(--accent)"><span id="info-docs-url">your-ip:8000/docs</span></a><br>
               Overlay: <a href="/overlay/index.html" target="_blank" style="color:var(--accent)">Open in new tab</a>
             </div>
           </div>
@@ -1250,8 +1271,8 @@ label.field-label{display:block;font-size:0.72rem;text-transform:uppercase;lette
           <div class="card">
             <div class="card-title">Access Points</div>
             <div style="font-size:0.85rem;color:var(--text2);line-height:2">
-              Frontend: <strong>http://192.168.4.1:3000</strong><br>
-              Backend:  <strong>http://192.168.4.1:8000</strong><br>
+              Main App: <strong><span id="info-main-url">http://[your-ip]:8000</span></strong><br>
+              API Docs: <strong><span id="info-api-url">http://[your-ip]:8000/docs</span></strong><br>
               Overlay:  <strong>http://192.168.4.1:8000/overlay/</strong>
             </div>
           </div>

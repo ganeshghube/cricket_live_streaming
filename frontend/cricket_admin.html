@@ -113,8 +113,8 @@ button:active{opacity:.65;transform:scale(.95);}
   <span class="fh-pill" id="iFH">FREE HIT</span>
 </div>
 
-<div class="pv-lbl">▶ LIVE OVERLAY — http://localhost:8000/overlay/cricket_overlay.html</div>
-<div class="pv"><iframe id="overlayFrame" src="http://localhost:8000/overlay/cricket_overlay.html"></iframe></div>
+<div class="pv-lbl">▶ LIVE OVERLAY — http://" + location.hostname + ":8000/overlay/cricket_overlay.html</div>
+<div class="pv"><iframe id="overlayFrame" src="http://" + location.hostname + ":8000/overlay/cricket_overlay.html"></iframe></div>
 
 <div class="body">
 
@@ -379,7 +379,7 @@ async function saveState(state) {
     // But force the preview iframe to stay pointed at correct URL
     const fr = document.getElementById('overlayFrame');
     if (fr && !fr.src.includes(':8000')) {
-      fr.src = 'http://localhost:8000/overlay/cricket_overlay.html';
+      fr.src = 'http://" + location.hostname + ":8000/overlay/cricket_overlay.html';
     }
   } catch(e) {
     setApiDot(false);
